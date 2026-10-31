@@ -15,7 +15,7 @@ import { load, persistStorage, save } from "../platform/persist";
 import { DEFAULT_PREFS, effectiveFeel, hydrate, toSettings, type Prefs } from "../state";
 
 export type Tab = "unit" | "voice" | "presets";
-export type SheetId = "random" | "gap" | "timer" | "countIn" | "menu" | "preset" | null;
+export type SheetId = "random" | "gap" | "timer" | "countIn" | "preset" | null;
 
 export const createTempo = () => {
   const [prefs, setPrefs] = createStore<Prefs>(structuredClone(DEFAULT_PREFS));
@@ -101,7 +101,7 @@ export const createTempo = () => {
   }, 250);
   onCleanup(() => clearInterval(timerId));
 
-  // ── persistence + shared-set links ────────────────────────────────────
+  // ── persistence ────────────────────────────────────
   void (async () => {
     setPrefs(reconcile(hydrate(await load<Partial<Prefs>>("prefs", {}))));
     setLoaded(true);

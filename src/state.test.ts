@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Capabilities } from "./platform/capabilities";
 import { DEFAULT_PREFS, effectiveFeel, feelAvailable, formatClock, hydrate, toSettings } from "./state";
 
-const all: Capabilities = { vibration: true, wakeLock: true, mediaSession: true, share: true, lockedPlayback: true };
+const all: Capabilities = { vibration: true, wakeLock: true, mediaSession: true, lockedPlayback: true };
 const ios: Capabilities = { ...all, vibration: false, lockedPlayback: false };
 
 describe("feel settings", () => {

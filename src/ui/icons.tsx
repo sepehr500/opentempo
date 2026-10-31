@@ -109,13 +109,6 @@ const VOICE_PATHS: Record<string, any> = {
 
 export const VoiceIcon = (p: { id: string }) => <S>{VOICE_PATHS[p.id]}</S>;
 
-export const Share = () => (
-  <S>
-    <path d="M9 2v10M5 5.5L9 2l4 3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
-    <path d="M3.5 9v6h11V9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
-  </S>
-);
-
 export const Plus = () => (
   <S size={14} view={14}>
     <path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />

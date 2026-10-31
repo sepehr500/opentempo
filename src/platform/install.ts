@@ -1,4 +1,4 @@
-// Install prompt (Chromium) + share. iOS has no prompt; Safari's Share → Add to Home Screen covers it.
+// Install prompt (Chromium). iOS has no prompt; Safari's Share → Add to Home Screen covers it.
 import { createSignal } from "solid-js";
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
@@ -28,18 +28,4 @@ export const install = async () => {
   await e.prompt();
   await e.userChoice;
   setDeferred(null);
-};
-
-/** Web Share with clipboard fallback. Returns what happened, for a tiny confirmation. */
-export const shareLink = async (title: string, url: string): Promise<"shared" | "copied" | "failed"> => {
-  try {
-    if (navigator.share) {
-      await navigator.share({ title, url });
-      return "shared";
-    }
-    await navigator.clipboard.writeText(url);
-    return "copied";
-  } catch {
-    return "failed";
-  }
 };

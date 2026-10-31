@@ -51,15 +51,6 @@ button {
   font-weight: 700;
   letter-spacing: -0.03em;
 }
-.icon-btn {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  background: var(--color-key);
-  border: 1px solid var(--color-seam);
-}
 
 /* ── display ────────────────────────────────── */
 .display {
@@ -782,4 +773,19 @@ small {
   box-shadow: 0 2px 0 var(--color-slate-rim);
   font: 12px/1 var(--font-mono);
   letter-spacing: 0.04em;
+}
+
+/* ── install (only when the browser offers it) ── */
+.install-btn {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--color-accent);
+  box-shadow: 0 2px 0 var(--color-accent-rim);
+  color: var(--color-ink);
+  font: 12px/1 var(--font-mono);
+  letter-spacing: 0.04em;
+}
+.top {
+  min-height: 62px;
 }

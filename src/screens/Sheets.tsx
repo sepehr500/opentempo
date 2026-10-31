@@ -3,7 +3,6 @@ import { useTempo } from "../app/tempo";
 import { valuesOf } from "../core/presets";
 import { meta } from "./Presets";
 import { capabilities } from "../platform/capabilities";
-import { canInstall, install, shareLink } from "../platform/install";
 import { formatClock } from "../state";
 import { Choice, RangeRuler, Sheet, SheetHeader, Stepper } from "../ui/controls";
 import * as Icon from "../ui/icons";
@@ -146,46 +145,18 @@ const PresetSheet = () => {
   );
 };
 
-const MenuSheet = () => {
-  const t = useTempo();
-  return (
-    <>
-      <header class="sheet-head">
-        <span class="sheet-title">tempo</span>
-      </header>
-      <div class="grid">
-        <Show when={canInstall()}>
-          <button class="key wide span-2 accent" onClick={() => void install()}>
-            <span>install</span>
-          </button>
-        </Show>
-        <button
-          class="key wide span-2"
-          onClick={async () => {
-            if ((await shareLink("tempo", location.origin)) === "copied") t.say("link copied");
-          }}
-        >
-          <Icon.Share />
-          <span>share tempo</span>
-        </button>
-      </div>
-    </>
-  );
-};
-
-const TITLES: Record<string, string> = { random: "random tempo", gap: "gap trainer", timer: "practice timer", countIn: "count-in", preset: "preset", menu: "menu" };
+const TITLES: Record<string, string> = { random: "random tempo", gap: "gap trainer", timer: "practice timer", countIn: "count-in", preset: "preset" };
 
 export const Sheets = () => {
   const t = useTempo();
   return (
-    <Sheet open={t.sheet() !== null} onClose={() => t.setSheet(null)} label={TITLES[t.sheet() ?? "menu"]}>
+    <Sheet open={t.sheet() !== null} onClose={() => t.setSheet(null)} label={TITLES[t.sheet() ?? "preset"]}>
       <Switch>
         <Match when={t.sheet() === "random"}><RandomSheet /></Match>
         <Match when={t.sheet() === "gap"}><GapSheet /></Match>
         <Match when={t.sheet() === "timer"}><TimerSheet /></Match>
         <Match when={t.sheet() === "countIn"}><CountInSheet /></Match>
         <Match when={t.sheet() === "preset"}><PresetSheet /></Match>
-        <Match when={t.sheet() === "menu"}><MenuSheet /></Match>
       </Switch>
     </Sheet>
   );

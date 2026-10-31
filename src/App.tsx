@@ -4,7 +4,7 @@ import { Presets } from "./screens/Presets";
 import { Sheets } from "./screens/Sheets";
 import { Unit } from "./screens/Unit";
 import { Voice } from "./screens/Voice";
-import * as Icon from "./ui/icons";
+import { canInstall, install } from "./platform/install";
 
 const TABS: readonly Tab[] = ["unit", "voice", "presets"];
 
@@ -14,9 +14,11 @@ const Shell = () => {
     <main class={`screen ${t.tab()}`}>
       <header class="top">
         <h1>{t.tab() === "unit" ? "tempo" : t.tab()}</h1>
-        <button class="icon-btn" aria-label="menu" aria-haspopup="dialog" onClick={() => t.setSheet("menu")}>
-          <Icon.More />
-        </button>
+        <Show when={canInstall()}>
+          <button class="install-btn" onClick={() => void install()}>
+            install
+          </button>
+        </Show>
       </header>
 
       <Switch>

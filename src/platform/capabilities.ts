@@ -5,7 +5,6 @@ export type Capabilities = {
   readonly vibration: boolean;
   readonly wakeLock: boolean;
   readonly mediaSession: boolean;
-  readonly share: boolean;
   /** Click keeps running with the screen locked. iOS suspends Web Audio in the background. */
   readonly lockedPlayback: boolean;
 };
@@ -25,11 +24,10 @@ export const detect = (env: Env): Capabilities => {
     vibration: typeof n.vibrate === "function" && !isAppleMobile(env),
     wakeLock: "wakeLock" in n,
     mediaSession: "mediaSession" in n,
-    share: typeof n.share === "function",
     lockedPlayback: !isAppleMobile(env),
   };
 };
 
 export const capabilities: Capabilities = typeof navigator === "undefined"
-  ? { vibration: false, wakeLock: false, mediaSession: false, share: false, lockedPlayback: false }
+  ? { vibration: false, wakeLock: false, mediaSession: false, lockedPlayback: false }
   : detect({ navigator });
