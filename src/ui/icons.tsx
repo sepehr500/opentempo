@@ -75,3 +75,62 @@ export const More = () => (
     <circle cx="11" cy="7" r="1.5" fill="currentColor" />
   </S>
 );
+
+// Voice pictograms (Voice screen grid).
+const VOICE_PATHS: Record<string, any> = {
+  click: <path d="M9 3v12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />,
+  wood: <rect x="3" y="6.5" width="12" height="5" rx="1.2" fill="currentColor" />,
+  bell: <path d="M5.5 4h7l2 10h-11z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />,
+  rim: (
+    <>
+      <circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="1.7" />
+      <path d="M4.8 13.2l8.4-8.4" stroke="currentColor" stroke-width="1.7" />
+    </>
+  ),
+  beep: <path d="M2 9c1.75-4 3.5-4 5.25 0s3.5 4 5.25 0 3.5-4 3.5 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />,
+  clave: <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />,
+  count: (
+    <>
+      <circle cx="5.5" cy="9" r="2" fill="currentColor" />
+      <circle cx="12.5" cy="9" r="2" fill="none" stroke="currentColor" stroke-width="1.6" />
+    </>
+  ),
+  hat: (
+    <>
+      <circle cx="4" cy="5" r="1.4" fill="currentColor" />
+      <circle cx="9" cy="5" r="1.4" fill="currentColor" />
+      <circle cx="14" cy="5" r="1.4" fill="currentColor" />
+      <circle cx="6.5" cy="9.5" r="1.4" fill="currentColor" />
+      <circle cx="11.5" cy="9.5" r="1.4" fill="currentColor" />
+      <circle cx="9" cy="14" r="1.4" fill="currentColor" />
+    </>
+  ),
+};
+
+export const VoiceIcon = (p: { id: string }) => <S>{VOICE_PATHS[p.id]}</S>;
+
+export const Share = () => (
+  <S>
+    <path d="M9 2v10M5 5.5L9 2l4 3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M3.5 9v6h11V9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+  </S>
+);
+
+export const Plus = () => (
+  <S size={14} view={14}>
+    <path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+  </S>
+);
+
+export const Buzz = () => (
+  <S>
+    <rect x="6" y="3" width="6" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6" />
+    <path d="M3 6.5v5M15 6.5v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+  </S>
+);
+
+export const Square = () => (
+  <S size={12} view={12}>
+    <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor" />
+  </S>
+);

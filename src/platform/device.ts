@@ -35,8 +35,10 @@ export type MediaHandlers = {
   nudge: (delta: number) => void;
 };
 
+export type MediaState = { bpm: number; playing: boolean; title?: string; album?: string; artwork: string | null };
+
 export const setupMediaSession = (h: MediaHandlers) => {
-  if (!("mediaSession" in navigator)) return { update: (_: { bpm: number; playing: boolean }) => {} };
+  if (!("mediaSession" in navigator)) return { update: (_: MediaState) => {} };
   const ms = navigator.mediaSession;
   const safe = (action: MediaSessionAction, fn: MediaSessionActionHandler) => {
     try {
@@ -51,8 +53,13 @@ export const setupMediaSession = (h: MediaHandlers) => {
   safe("previoustrack", () => h.nudge(-5));
   safe("nexttrack", () => h.nudge(5));
   return {
-    update({ bpm, playing }: { bpm: number; playing: boolean }) {
-      ms.metadata = new MediaMetadata({ title: `${bpm} bpm`, artist: "tempo", artwork: [{ src: "/icon-512.png", sizes: "512x512", type: "image/png" }] });
+    update({ bpm, playing, title, album, artwork }: MediaState) {
+      ms.metadata = new MediaMetadata({
+        title: title ? `${title} · ${bpm} bpm` : `${bpm} bpm`,
+        artist: "tempo",
+        album: album ?? "",
+        artwork: [{ src: artwork ?? "/icon-512.png", sizes: "512x512", type: "image/png" }],
+      });
       ms.playbackState = playing ? "playing" : "paused";
     },
   };

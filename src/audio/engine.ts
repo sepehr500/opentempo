@@ -26,6 +26,8 @@ export const createEngine = (events: EngineEvents) => {
   let noise: AudioBuffer | null = null;
   let settings: Settings | null = null;
   let voice: VoiceId = "wood";
+  let level = 0.8;
+  let extraLatency = 0; // seconds; manual headphone (Bluetooth) delay
   let run: Running | null = null;
   let raf = 0;
   const ticker = new Worker(new URL("./ticker.worker.ts", import.meta.url), { type: "module" });
@@ -37,6 +39,7 @@ export const createEngine = (events: EngineEvents) => {
       if (session) session.type = "playback";
       ctx = new AudioContext({ latencyHint: "interactive" });
       master = ctx.createGain();
+      master.gain.value = level;
       master.connect(ctx.destination);
       noise = ctx.createBuffer(1, ctx.sampleRate * 0.25, ctx.sampleRate);
       const data = noise.getChannelData(0);
@@ -46,9 +49,9 @@ export const createEngine = (events: EngineEvents) => {
     return ctx;
   };
 
-  const sound = (c: Click, at: number) => {
+  const sound = (c: Click, at: number, id: VoiceId = voice) => {
     if (!ctx || !master || c.muted) return;
-    const v = VOICES[voice];
+    const v = VOICES[id];
     const env = ctx.createGain();
     env.gain.setValueAtTime(v.gain[c.kind], at);
     env.gain.exponentialRampToValueAtTime(0.0001, at + v.decay);
@@ -86,7 +89,7 @@ export const createEngine = (events: EngineEvents) => {
 
   const frame = () => {
     if (!ctx || !run) return;
-    const heard = ctx.currentTime - (ctx.outputLatency || 0);
+    const heard = ctx.currentTime - (ctx.outputLatency || 0) - extraLatency;
     while (run.visual.length && run.t0 + run.visual[0].time <= heard) events.onClick(run.visual.shift()!);
     raf = requestAnimationFrame(frame);
   };
@@ -123,8 +126,17 @@ export const createEngine = (events: EngineEvents) => {
     setVoice(v: VoiceId) {
       voice = v;
     },
-    setLevel(level: number) {
-      if (master) master.gain.value = level;
+    /** Play one accented click of a voice, now. */
+    async preview(id: VoiceId) {
+      const ac = await ensureContext();
+      sound({ time: 0, bar: 0, beat: 0, sub: 0, phase: 0, kind: "accent", countIn: false, muted: false, bpm: 0 }, ac.currentTime + 0.01, id);
+    },
+    setLatencyMs(ms: number) {
+      extraLatency = Math.max(0, ms) / 1000;
+    },
+    setLevel(l: number) {
+      level = l;
+      if (master) master.gain.value = l;
     },
     /** Audio-clock seconds since playback started (for the practice timer). */
     elapsed: () => (ctx && run ? Math.max(0, ctx.currentTime - run.t0) : 0),
