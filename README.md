@@ -16,6 +16,8 @@ npm run build    # typecheck + production build + service worker
 - `src/audio/`: the imperative shell. A lookahead scheduler on the audio clock, a
   worker ticker and synthesised voices (no samples).
 - `src/platform/`: device adapters for Wake Lock, Vibration, Media Session and IndexedDB.
+  Lock-screen controls need a playing media element, so a silent looping `<audio>` runs
+  beside the click while it plays; the click itself never goes through it.
 - `src/ui/`: Solid components for the dot-matrix display, knobs and icons.
 - `src/styles/tokens.css`: the theme exported from Paper (see `scripts/sync-tokens.md`).
 - `scripts/glyphs.py`: regenerates the dot-matrix digit glyphs from Space Grotesk.

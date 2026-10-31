@@ -1,9 +1,10 @@
 // The app's state and actions in one place. Screens read signals and call actions; nothing else
 // touches the engine or storage.
-import { createContext, createEffect, createMemo, createSignal, on, onCleanup, useContext } from "solid-js";
+import { createContext, createEffect, createMemo, createSignal, on, onCleanup, untrack, useContext } from "solid-js";
 import { createStore, produce, reconcile } from "solid-js/store";
 import { createEngine } from "../audio/engine";
 import type { VoiceId } from "../audio/voices";
+import { positionState } from "../core/media";
 import { addPreset, matches, removePreset, updatePreset, valuesOf, type Preset } from "../core/presets";
 import { addTap, tapBpm } from "../core/tap";
 import { MAX_BPM, MIN_BPM, clampBpm } from "../core/timeline";
@@ -42,6 +43,13 @@ export const createTempo = () => {
     setTimeout(() => setToast((t) => (t === msg ? null : t)), 1600);
   };
 
+  // Lock-screen / notification controls. Declared before start/stop, which drive its carrier.
+  const media = setupMediaSession({
+    play: () => engine.running || void start(),
+    pause: () => stop(),
+    nudge: (d) => setBpm(prefs.bpm + d),
+  });
+
   // ── engine ───────────────────────────────────────────────────────────
   const engine = createEngine({
     onClick: (c) => {
@@ -55,17 +63,26 @@ export const createTempo = () => {
     },
   });
 
+  // Everything up to the first await runs inside the play tap: the audio context and the
+  // media-session carrier both need that gesture on iOS.
   const start = async () => {
     setSeed((Math.random() * 2 ** 31) | 0);
     setElapsed(0);
     engine.setVoice(prefs.voice);
     engine.setLevel(prefs.level / 100);
     engine.setLatencyMs(prefs.latencyMs);
-    await engine.start(settings());
-    setPlaying(true);
+    const started = engine.start(settings());
+    media.play();
+    try {
+      await started;
+      setPlaying(true);
+    } catch {
+      media.pause();
+    }
   };
   const stop = () => {
     engine.stop();
+    media.pause();
     setPlaying(false);
     setNow(null);
   };
@@ -80,15 +97,15 @@ export const createTempo = () => {
   const wake = createWakeLock();
   createEffect(() => wake.set(playing() && feel().stayAwake));
 
-  const media = setupMediaSession({
-    play: () => void start(),
-    pause: stop,
-    nudge: (d) => setBpm(prefs.bpm + d),
-  });
   createEffect(() => {
     const bpm = shownBpm();
     const art = loaded() ? artworkFor(String(bpm), { bg: cssVar("--color-display"), dot: cssVar("--color-accent") }) : null;
-    media.update({ bpm, playing: playing(), title: activePreset()?.name, artwork: art });
+    media.metadata({ bpm, title: activePreset()?.name, artwork: art });
+  });
+  // The OS extrapolates the position itself; only transitions and timer changes need reporting.
+  createEffect(() => {
+    const timer = prefs.timer.on ? prefs.timer.minutes * 60 : null;
+    media.state(playing(), positionState(timer, untrack(elapsed)));
   });
 
   const timerId = setInterval(() => {
