@@ -1,4 +1,4 @@
-import { For } from "solid-js";
+import { For, createEffect, createSignal, on } from "solid-js";
 import { VOICES, type VoiceId } from "../audio/voices";
 import { useTempo } from "../app/tempo";
 import { capabilities } from "../platform/capabilities";
@@ -6,44 +6,10 @@ import { feelAvailable, type Feel } from "../state";
 import { Stepper, Toggle } from "../ui/controls";
 import { DotMatrix } from "../ui/DotMatrix";
 import { VoiceIcon } from "../ui/icons";
+import { Scope, type Strike } from "../ui/Scope";
+import type { ClickKind } from "../core/types";
 
 const ORDER = Object.keys(VOICES) as VoiceId[];
-
-/** Pure: the voice's envelope as dot heights (0..rows), for the display waveform. */
-export const envelopeDots = (id: VoiceId, cols = 48, rows = 4): number[] => {
-  const v = VOICES[id];
-  const span = v.decay * 1.25; // show the whole decay, whatever its length
-  return Array.from({ length: cols }, (_, i) => {
-    const t = (i / cols) * span;
-    const attack = Math.min(1, (i + 1) / 2);
-    const amp = attack * Math.exp((-t / v.decay) * 4.6); // matches the exponential ramp to ~0
-    return Math.round(Math.sqrt(amp) * rows); // sqrt ≈ perceived loudness, so the tail stays visible
-  });
-};
-
-/** Dot-matrix waveform: bright above the line, dim mirror below, unlit dots on the baseline. */
-const Waveform = (p: { voice: VoiceId }) => {
-  const pitch = 6.5;
-  const rows = 4;
-  const cols = 48;
-  const geo = () => {
-    const h = envelopeDots(p.voice, cols, rows);
-    const x = (i: number) => i * pitch + pitch / 2;
-    const y = (k: number) => (rows - k) * pitch + pitch / 2;
-    const dot = (cx: number, cy: number) => `M${cx} ${cy}h0`;
-    const up = h.flatMap((n, i) => Array.from({ length: n }, (_, k) => dot(x(i), y(k + 1)))).join("");
-    const down = h.flatMap((n, i) => Array.from({ length: Math.max(0, n - 1) }, (_, k) => dot(x(i), y(-(k + 1))))).join("");
-    const base = h.map((_, i) => dot(x(i), y(0))).join("");
-    return { up, down, base, w: cols * pitch, h: (rows * 2 + 1) * pitch };
-  };
-  return (
-    <svg class="waveform" viewBox={`0 0 ${geo().w} ${geo().h}`} aria-hidden="true">
-      <path d={geo().base} stroke="var(--color-dot-off)" stroke-width="4" stroke-linecap="round" />
-      <path d={geo().down} stroke="var(--color-dot-dim)" stroke-width="4" stroke-linecap="round" />
-      <path d={geo().up} stroke="var(--color-dot-on)" stroke-width="4" stroke-linecap="round" />
-    </svg>
-  );
-};
 
 const FEEL: ReadonlyArray<readonly [keyof Feel, string]> = [
   ["buzz", "buzz on the one"],
@@ -51,13 +17,32 @@ const FEEL: ReadonlyArray<readonly [keyof Feel, string]> = [
   ["stayAwake", "stay awake"],
 ];
 
+const WAVE_NAME = { sine: "sine", square: "square", triangle: "tri", sawtooth: "saw", custom: "wave", noise: "noise" } as const;
+
 export const Voice = () => {
   const t = useTempo();
+  const [strike, setStrike] = createSignal<Strike | null>(null);
+  const hit = (voice: VoiceId, kind: ClickKind) => setStrike({ voice, kind, at: performance.now(), seed: (Math.random() * 2 ** 31) | 0 });
+  // Every audible click strikes the scope; starting or stopping clears it.
+  createEffect(on(t.now, (c) => c && !c.muted && hit(t.prefs.voice, c.kind), { defer: true }));
+  createEffect(on(t.playing, () => setStrike(null), { defer: true }));
+
+  const shown = () => {
+    const s = strike();
+    return s ? { v: VOICES[s.voice], kind: s.kind } : { v: VOICES[t.prefs.voice], kind: "accent" as const };
+  };
   return (
     <>
       <section class="display voice-display">
-        <DotMatrix text={t.prefs.voice} set="small" pitch={5} />
-        <Waveform voice={t.prefs.voice} />
+        <div class="voice-head">
+          <DotMatrix text={t.prefs.voice} set="small" pitch={5} />
+          <div class="display-side voice-spec">
+            <span>{WAVE_NAME[shown().v.wave]}</span>
+            <span>{shown().v.freq[shown().kind]}hz</span>
+            <span>{Math.round(shown().v.decay * 1000)}ms</span>
+          </div>
+        </div>
+        <Scope voice={t.prefs.voice} strike={strike()} hold={!t.playing()} />
       </section>
 
       <section class="grid voices" role="radiogroup" aria-label="sound">
@@ -71,6 +56,7 @@ export const Voice = () => {
               onClick={() => {
                 t.setPrefs("voice", id);
                 t.preview(id);
+                hit(id, "accent");
               }}
             >
               <VoiceIcon id={id} />

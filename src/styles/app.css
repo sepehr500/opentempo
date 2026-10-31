@@ -591,7 +591,20 @@ small {
 .voice-display .dot-matrix {
   max-width: 100%;
 }
-.waveform {
+.voice-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.voice-spec {
+  color: var(--color-display-muted);
+  font: 11px/14px var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.scope {
+  display: block;
   width: 100%;
   height: auto;
 }
