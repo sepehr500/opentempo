@@ -15,7 +15,6 @@ export const Sheet = (p: { open: boolean; onClose: () => void; children: JSX.Ele
     }
     if (!p.open && el.open) el.close();
   });
-  const onClick = (e: MouseEvent) => e.target === el && p.onClose(); // tap above the sheet
 
   // ── drag down to dismiss ──
   let body!: HTMLDivElement;
@@ -62,17 +61,35 @@ export const Sheet = (p: { open: boolean; onClose: () => void; children: JSX.Ele
     const last = d.samples[d.samples.length - 1];
     // Count the release point only if it moved; a lift in place must not dilute the flick.
     const samples = e.clientY !== last.y ? pushSample(d.samples, { y: e.clientY, t: e.timeStamp }) : d.samples;
-    if (e.type !== "pointercancel" && shouldDismiss(dy, releaseVelocity(samples, e.timeStamp), body.offsetHeight)) {
-      place(body.offsetHeight, true);
-      setTimeout(() => {
-        p.onClose();
-        place(0, false);
-      }, reducedMotion() ? 0 : 180);
-    } else place(0, true);
+    if (e.type !== "pointercancel" && shouldDismiss(dy, releaseVelocity(samples, e.timeStamp), body.offsetHeight)) dismiss();
+    else place(0, true);
   };
 
+  /** Every way of closing slides the sheet down, the same way it came up. */
+  let leaving = false;
+  const dismiss = () => {
+    if (leaving) return;
+    leaving = true;
+    place(body.offsetHeight, true);
+    setTimeout(() => {
+      p.onClose();
+      place(0, false);
+      leaving = false;
+    }, reducedMotion() ? 0 : 180);
+  };
+  const onClick = (e: MouseEvent) => e.target === el && dismiss(); // tap above the sheet
+  const onCancel = (e: Event) => (e.preventDefault(), dismiss()); // Escape / Android back
+
+  // Cancel touch moves while the sheet is being dragged: without this the browser still treats the
+  // gesture as a fling and swallows the next tap (fling-cancel tap suppression).
+  const blockScroll = (e: TouchEvent) => drag?.claimed && e.cancelable && e.preventDefault();
+  createEffect(() => {
+    body.addEventListener("touchmove", blockScroll, { passive: false });
+    onCleanup(() => body.removeEventListener("touchmove", blockScroll));
+  });
+
   return (
-    <dialog ref={el} class="sheet" aria-label={p.label} onClose={p.onClose} onCancel={p.onClose} onClick={onClick}>
+    <dialog ref={el} class="sheet" aria-label={p.label} onClose={p.onClose} onCancel={onCancel} onClick={onClick}>
       <div class="sheet-body" ref={body} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
         <div class="grabber" aria-hidden="true" />
         <Show when={p.open}>{p.children}</Show>
