@@ -5,7 +5,13 @@ import type { Click, Settings } from "../core/types";
 import { VOICES, type VoiceId } from "./voices";
 
 const LOOKAHEAD_S = 0.12;
+/** Hidden/locked pages may get their ticks late (timer throttling), so schedule further ahead. */
+const HIDDEN_LOOKAHEAD_S = 1.5;
 const TICK_MS = 25;
+/** Clicks heard longer ago than this (e.g. while the screen was locked) are not shown. */
+const STALE_S = 0.25;
+/** Bound on clicks queued for the display: covers the hidden lookahead at 300 bpm in 16ths. */
+const MAX_VISUAL = 64;
 
 export type EngineEvents = {
   /** Fired (on an animation frame) when a click becomes audible. */
@@ -14,6 +20,7 @@ export type EngineEvents = {
 
 type Running = {
   readonly t0: number; // audio-clock time of timeline 0
+  readonly bus: GainNode; // this run's clicks; cut on stop so nothing already scheduled sounds
   gen: Generator<Click>;
   pending: Click | null;
   lastScheduled: Click | null;
@@ -49,13 +56,13 @@ export const createEngine = (events: EngineEvents) => {
     return ctx;
   };
 
-  const sound = (c: Click, at: number, id: VoiceId = voice) => {
-    if (!ctx || !master || c.muted) return;
+  const sound = (c: Click, at: number, id: VoiceId, out: AudioNode) => {
+    if (!ctx || c.muted) return;
     const v = VOICES[id];
     const env = ctx.createGain();
     env.gain.setValueAtTime(v.gain[c.kind], at);
     env.gain.exponentialRampToValueAtTime(0.0001, at + v.decay);
-    env.connect(master);
+    env.connect(out);
     const src =
       v.wave === "noise"
         ? Object.assign(ctx.createBufferSource(), { buffer: noise })
@@ -73,7 +80,7 @@ export const createEngine = (events: EngineEvents) => {
 
   const schedule = () => {
     if (!ctx || !run) return;
-    const horizon = ctx.currentTime + LOOKAHEAD_S;
+    const horizon = ctx.currentTime + (document.visibilityState === "hidden" ? HIDDEN_LOOKAHEAD_S : LOOKAHEAD_S);
     for (;;) {
       const c = run.pending ?? run.gen.next().value;
       if (run.t0 + c.time >= horizon) {
@@ -81,16 +88,28 @@ export const createEngine = (events: EngineEvents) => {
         break;
       }
       run.pending = null;
-      sound(c, run.t0 + c.time);
+      sound(c, run.t0 + c.time, voice, run.bus);
       run.lastScheduled = c;
       run.visual.push(c);
+      if (run.visual.length > MAX_VISUAL) run.visual.shift(); // no frames while hidden
     }
+  };
+
+  const silence = (r: Running) => {
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    r.bus.gain.setValueAtTime(1, t);
+    r.bus.gain.linearRampToValueAtTime(0, t + 0.005);
+    setTimeout(() => r.bus.disconnect(), 50);
   };
 
   const frame = () => {
     if (!ctx || !run) return;
     const heard = ctx.currentTime - (ctx.outputLatency || 0) - extraLatency;
-    while (run.visual.length && run.t0 + run.visual[0].time <= heard) events.onClick(run.visual.shift()!);
+    while (run.visual.length && run.t0 + run.visual[0].time <= heard) {
+      const c = run.visual.shift()!;
+      if (heard - (run.t0 + c.time) < STALE_S) events.onClick(c);
+    }
     raf = requestAnimationFrame(frame);
   };
 
@@ -107,7 +126,10 @@ export const createEngine = (events: EngineEvents) => {
     async start(s: Settings) {
       const ac = await ensureContext();
       settings = s;
-      run = { t0: ac.currentTime + 0.06, gen: clicks(s, origin(s)), pending: null, lastScheduled: null, visual: [] };
+      if (run) silence(run);
+      const bus = ac.createGain();
+      bus.connect(master!);
+      run = { t0: ac.currentTime + 0.06, bus, gen: clicks(s, origin(s)), pending: null, lastScheduled: null, visual: [] };
       schedule();
       ticker.postMessage({ cmd: "start", ms: TICK_MS });
       cancelAnimationFrame(raf);
@@ -116,6 +138,7 @@ export const createEngine = (events: EngineEvents) => {
     stop() {
       ticker.postMessage({ cmd: "stop" });
       cancelAnimationFrame(raf);
+      if (run) silence(run);
       run = null;
     },
     update(s: Settings) {
@@ -129,7 +152,7 @@ export const createEngine = (events: EngineEvents) => {
     /** Play one accented click of a voice, now. */
     async preview(id: VoiceId) {
       const ac = await ensureContext();
-      sound({ time: 0, bar: 0, beat: 0, sub: 0, phase: 0, kind: "accent", countIn: false, muted: false, bpm: 0 }, ac.currentTime + 0.01, id);
+      sound({ time: 0, bar: 0, beat: 0, sub: 0, phase: 0, kind: "accent", countIn: false, muted: false, bpm: 0 }, ac.currentTime + 0.01, id, master!);
     },
     setLatencyMs(ms: number) {
       extraLatency = Math.max(0, ms) / 1000;
