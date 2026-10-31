@@ -80,6 +80,17 @@ export const toSettings = (p: Prefs, seed: number): Settings => ({
   seed,
 });
 
+/**
+ * The tempo on the display. It follows the knob immediately; only random tempo shows the tempo
+ * actually being heard, because there the two genuinely differ.
+ */
+export const displayBpm = (p: Pick<Prefs, "bpm" | "random">, heard: { bpm: number; countIn: boolean } | null): number =>
+  p.random.on && heard && !heard.countIn ? heard.bpm : p.bpm;
+
+/** Haptic detents no closer than this: faster than a phone's vibrator can render as distinct ticks. */
+export const DETENT_GAP_MS = 40;
+export const detentDue = (now: number, last: number): boolean => now - last >= DETENT_GAP_MS;
+
 export const SPLIT_GLYPH: Record<Subdivision, string> = { 1: "♩", 2: "♪", 3: "3", 4: "♬" };
 
 export const formatClock = (seconds: number): string => {

@@ -10,10 +10,11 @@ import { addTap, tapBpm } from "../core/tap";
 import { MAX_BPM, MIN_BPM, clampBpm } from "../core/timeline";
 import type { Click } from "../core/types";
 import { artworkFor, cssVar } from "../platform/artwork";
+import { settled } from "./settled";
 import { capabilities } from "../platform/capabilities";
 import { buzz, createWakeLock, setupMediaSession } from "../platform/device";
 import { load, persistStorage, save } from "../platform/persist";
-import { DEFAULT_PREFS, effectiveFeel, hydrate, toSettings, type Prefs } from "../state";
+import { DEFAULT_PREFS, effectiveFeel, hydrate, toSettings, type Prefs, displayBpm } from "../state";
 
 export type Tab = "unit" | "voice" | "presets";
 export type SheetId = "random" | "gap" | "timer" | "countIn" | "preset" | null;
@@ -35,7 +36,7 @@ export const createTempo = () => {
   const settings = createMemo(() => toSettings(prefs, seed()));
   const feel = createMemo(() => effectiveFeel({ ...prefs.feel }, capabilities));
   const activePreset = createMemo<Preset | undefined>(() => prefs.presets.find((p) => matches(p, prefs)));
-  const shownBpm = () => (playing() && now() && !now()!.countIn ? now()!.bpm : prefs.bpm);
+  const shownBpm = () => displayBpm(prefs, playing() ? now() : null);
   const timerLeft = () => prefs.timer.minutes * 60 - elapsed();
 
   const say = (msg: string) => {
@@ -97,10 +98,13 @@ export const createTempo = () => {
   const wake = createWakeLock();
   createEffect(() => wake.set(playing() && feel().stayAwake));
 
+  // Lock-screen metadata waits for the tempo to settle: drawing and encoding the artwork PNG is the
+  // most expensive thing the app does, and nobody looks at the lock screen mid-turn.
+  const lockMeta = settled(() => ({ bpm: shownBpm(), title: activePreset()?.name }), 350);
   createEffect(() => {
-    const bpm = shownBpm();
+    const { bpm, title } = lockMeta.value();
     const art = loaded() ? artworkFor(String(bpm), { bg: cssVar("--color-display"), dot: cssVar("--color-accent") }) : null;
-    media.metadata({ bpm, title: activePreset()?.name, artwork: art });
+    media.metadata({ bpm, title, artwork: art });
   });
   // The OS extrapolates the position itself; only transitions and timer changes need reporting.
   createEffect(() => {
@@ -124,10 +128,15 @@ export const createTempo = () => {
     setLoaded(true);
     void persistStorage();
   })();
+  // Save once a change has settled, and right away when the app goes to the background.
+  const saved = settled(() => JSON.stringify(prefs), 400);
   createEffect(() => {
-    const snapshot = JSON.parse(JSON.stringify(prefs)) as Prefs;
-    if (loaded()) void save("prefs", snapshot);
+    const json = saved.value();
+    if (loaded()) void save("prefs", JSON.parse(json) as Prefs);
   });
+  const flushAll = () => document.visibilityState === "hidden" && (saved.flush(), lockMeta.flush());
+  document.addEventListener("visibilitychange", flushAll);
+  onCleanup(() => document.removeEventListener("visibilitychange", flushAll));
 
   // ── actions ───────────────────────────────────────────────────────────
   const setBpm = (bpm: number) => setPrefs("bpm", clampBpm(bpm));

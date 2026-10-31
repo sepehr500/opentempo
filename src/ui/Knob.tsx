@@ -1,5 +1,6 @@
 import type { JSX } from "solid-js";
 import { buzz } from "../platform/device";
+import { detentDue } from "../state";
 
 export type KnobProps = {
   label: string;
@@ -24,11 +25,16 @@ export const Knob = (props: KnobProps) => {
   const step = () => props.step ?? 1;
   let startY = 0;
   let startV = 0;
+  let lastDetent = 0;
 
   const set = (v: number) => {
     const next = Math.min(props.max, Math.max(props.min, Math.round(v / step()) * step()));
     if (next !== props.value) {
-      buzz(4); // a detent you can feel (Android)
+      const at = performance.now();
+      if (detentDue(at, lastDetent)) {
+        buzz(4); // a detent you can feel (Android)
+        lastDetent = at;
+      }
       props.onChange(next);
     }
   };
