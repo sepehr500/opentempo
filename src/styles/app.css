@@ -72,6 +72,18 @@ button {
   flex-direction: column;
   gap: 4px;
 }
+/* Flash on the one: solid swap, no transparency. */
+.display.flash {
+  background: var(--color-accent);
+  --color-dot-on: var(--color-display);
+  color: var(--color-display);
+}
+.display.flash .beat-bar,
+.display.flash .beat,
+.display.flash .display-sub {
+  color: var(--color-display);
+}
+
 .display-top {
   display: flex;
   justify-content: space-between;

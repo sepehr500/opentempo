@@ -1,6 +1,7 @@
 // Persisted user preferences → derived timeline Settings. Pure functions plus one store.
 import type { Settings, Subdivision } from "./core/types";
 import type { VoiceId } from "./audio/voices";
+import type { Capabilities } from "./platform/capabilities";
 
 export type Prefs = {
   bpm: number;
@@ -12,7 +13,30 @@ export type Prefs = {
   gap: { on: boolean; play: number; mute: number };
   timer: { on: boolean; minutes: number; atEnd: "stop" | "buzz" };
   countIn: { on: boolean; bars: 1 | 2 };
+  feel: Feel;
 };
+
+/** Voice → feel settings. Each depends on a device capability. */
+export type Feel = { buzz: boolean; flash: boolean; stayAwake: boolean };
+
+export const FEEL_REQUIRES: Record<keyof Feel, keyof Capabilities | null> = {
+  buzz: "vibration",
+  flash: null,
+  stayAwake: "wakeLock",
+};
+
+/** Whether a feel setting can be used on this device (drives the disabled state). */
+export const feelAvailable = (key: keyof Feel, caps: Capabilities): boolean => {
+  const need = FEEL_REQUIRES[key];
+  return need === null || caps[need];
+};
+
+/** What actually applies: the user's choice, but only where the device supports it. */
+export const effectiveFeel = (feel: Feel, caps: Capabilities): Feel => ({
+  buzz: feel.buzz && feelAvailable("buzz", caps),
+  flash: feel.flash && feelAvailable("flash", caps),
+  stayAwake: feel.stayAwake && feelAvailable("stayAwake", caps),
+});
 
 export const DEFAULT_PREFS: Prefs = {
   bpm: 120,
@@ -24,6 +48,7 @@ export const DEFAULT_PREFS: Prefs = {
   gap: { on: false, play: 3, mute: 1 },
   timer: { on: false, minutes: 10, atEnd: "stop" },
   countIn: { on: false, bars: 1 },
+  feel: { buzz: true, flash: false, stayAwake: true },
 };
 
 /** Merge stored prefs over defaults so new fields get sane values after upgrades. */
@@ -34,6 +59,7 @@ export const hydrate = (stored: Partial<Prefs> | undefined): Prefs => ({
   gap: { ...DEFAULT_PREFS.gap, ...stored?.gap },
   timer: { ...DEFAULT_PREFS.timer, ...stored?.timer },
   countIn: { ...DEFAULT_PREFS.countIn, ...stored?.countIn },
+  feel: { ...DEFAULT_PREFS.feel, ...stored?.feel },
 });
 
 export const toSettings = (p: Prefs, seed: number): Settings => ({

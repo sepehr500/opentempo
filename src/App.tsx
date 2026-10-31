@@ -6,9 +6,10 @@ import { markingOf } from "./core/italian";
 import { addTap, tapBpm } from "./core/tap";
 import { MAX_BPM, MIN_BPM } from "./core/timeline";
 import type { Click, Subdivision } from "./core/types";
+import { capabilities } from "./platform/capabilities";
 import { buzz, createWakeLock, setupMediaSession } from "./platform/device";
 import { load, persistStorage, save } from "./platform/persist";
-import { DEFAULT_PREFS, SPLIT_GLYPH, formatClock, hydrate, toSettings, type Prefs } from "./state";
+import { DEFAULT_PREFS, SPLIT_GLYPH, effectiveFeel, formatClock, hydrate, toSettings, type Prefs } from "./state";
 import { DotMatrix } from "./ui/DotMatrix";
 import { Knob } from "./ui/Knob";
 import * as Icon from "./ui/icons";
@@ -24,14 +25,21 @@ export const App = () => {
   let taps: number[] = [];
 
   const [loaded, setLoaded] = createSignal(false);
+  const [flash, setFlash] = createSignal(false);
   const settings = createMemo(() => toSettings(prefs, seed()));
+  const feel = createMemo(() => effectiveFeel({ ...prefs.feel }, capabilities));
   const shownBpm = () => (playing() && now() ? now()!.bpm : prefs.bpm);
   const timerLeft = () => prefs.timer.minutes * 60 - elapsed();
 
   const engine = createEngine({
     onClick: (c) => {
       setNow(c);
-      if (c.beat === 0 && c.sub === 0 && !c.muted) buzz(c.countIn ? 10 : 20);
+      const downbeat = c.beat === 0 && c.sub === 0 && !c.muted;
+      if (downbeat && feel().buzz) buzz(c.countIn ? 10 : 20);
+      if (downbeat && feel().flash) {
+        setFlash(true);
+        setTimeout(() => setFlash(false), 90);
+      }
     },
   });
   const wake = createWakeLock();
@@ -60,7 +68,7 @@ export const App = () => {
   createEffect(on(settings, (s) => playing() && engine.update(s), { defer: true }));
   createEffect(() => engine.setLevel(prefs.level / 100));
   createEffect(() => engine.setVoice(prefs.voice));
-  createEffect(() => wake.set(playing()));
+  createEffect(() => wake.set(playing() && feel().stayAwake));
   createEffect(() => media.update({ bpm: shownBpm(), playing: playing() }));
 
   // Practice timer, driven by the audio clock.
@@ -116,7 +124,7 @@ export const App = () => {
         </button>
       </header>
 
-      <section class="display" aria-live="off">
+      <section class="display" classList={{ flash: flash() }} aria-live="off">
         <div class="display-top">
           <span>{prefs.beatsPerBar}/4</span>
           <Show when={playing() && now()}>
