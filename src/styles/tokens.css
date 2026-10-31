@@ -1,0 +1,45 @@
+/* Generated from Paper (TP-1 Soft · Sanzo Wada combination #294). See scripts/sync-tokens.md */
+:root {
+  --color-chassis: #F2F2EE;
+  --color-key: #FFFFFF;
+  --color-key-down: #E6E6E2;
+  --color-ink: #16212B;
+  --color-muted: #4C555C;
+  --color-seam: #D8D8D4;
+  --color-seam-strong: #CCCCC8;
+  --color-tick: #80807D;
+  --color-display: #12354E;
+  --color-accent: #FDBF68;
+  --color-accent-rim: #DFA24A;
+  --color-accent-soft: #FFF3E3;
+  --color-accent-ink: #905800;
+  --color-dot-on: var(--color-accent);
+  --color-dot-off: #21445D;
+  --color-dot-dim: #847964;
+  --color-display-text: #F5ECC2;
+  --color-display-muted: #B1B5A2;
+  --color-slate: #34454C;
+  --color-slate-rim: #223339;
+  --color-slate-text: #F5F4EE;
+  --color-slate-muted: #C7CAC8;
+  --color-blue: #97ACC8;
+  --color-blue-rim: #7C90AB;
+  --color-blue-ink: #52657F;
+  --color-green: #437742;
+  --color-green-rim: #295D29;
+  --color-green-ink: #3C703B;
+  --color-cream: #F5ECC2;
+  --color-cream-rim: #DED5AC;
+  --color-lock-bg: #042840;
+  --color-lock-card: #1E415B;
+  --color-lock-track: #355873;
+
+  --font-ui: "Space Grotesk Variable", system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, monospace;
+  --radius-key: 12px;
+  --radius-panel: 20px;
+
+  /* 4-column grid used across the Unit screen */
+  --grid-margin: 16px;
+  --grid-gap: 8px;
+}
