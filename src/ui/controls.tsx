@@ -1,5 +1,6 @@
 import { For, Show, createEffect, onCleanup, type JSX } from "solid-js";
 import { buzz } from "../platform/device";
+import { claims, offsetFor, shouldDismiss, velocityOf } from "./sheetDrag";
 
 // ── bottom sheet on native <dialog>: focus trap, Escape, and inertness for free ──
 export const Sheet = (p: { open: boolean; onClose: () => void; children: JSX.Element; label: string }) => {
@@ -15,9 +16,60 @@ export const Sheet = (p: { open: boolean; onClose: () => void; children: JSX.Ele
     if (!p.open && el.open) el.close();
   });
   const onClick = (e: MouseEvent) => e.target === el && p.onClose(); // tap above the sheet
+
+  // ── drag down to dismiss ──
+  let body!: HTMLDivElement;
+  type Drag = { id: number; x0: number; y0: number; claimed: boolean; prev: { y: number; t: number }; last: { y: number; t: number } };
+  let drag: Drag | null = null;
+  /** Controls with their own drag or text input keep it. */
+  const ownsGesture = (t: EventTarget | null) => t instanceof Element && !!t.closest("input, textarea, select, [role=slider], .ruler-track");
+  const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const place = (y: number, animate: boolean) => {
+    body.style.transition = animate && !reducedMotion() ? "transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1)" : "none";
+    body.style.transform = y ? `translateY(${y}px)` : "";
+  };
+  const swallowClick = () => {
+    const stop = (e: Event) => (e.stopPropagation(), e.preventDefault());
+    body.addEventListener("click", stop, { capture: true, once: true });
+    setTimeout(() => body.removeEventListener("click", stop, { capture: true }), 0); // no click came
+  };
+  const down = (e: PointerEvent) => {
+    if (drag || ownsGesture(e.target) || (e.pointerType === "mouse" && e.button !== 0)) return;
+    const pt = { y: e.clientY, t: e.timeStamp };
+    drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, claimed: false, prev: pt, last: pt };
+  };
+  const move = (e: PointerEvent) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x0;
+    const dy = e.clientY - drag.y0;
+    if (!drag.claimed) {
+      if (!claims(dx, dy)) return;
+      drag.claimed = true;
+      body.setPointerCapture(e.pointerId);
+    }
+    drag.prev = drag.last;
+    drag.last = { y: e.clientY, t: e.timeStamp };
+    place(offsetFor(dy), false);
+  };
+  const up = (e: PointerEvent) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag;
+    drag = null;
+    if (!d.claimed) return; // a tap: let the click through
+    swallowClick();
+    const dy = e.clientY - d.y0;
+    if (e.type !== "pointercancel" && shouldDismiss(dy, velocityOf(d.prev, d.last), body.offsetHeight)) {
+      place(body.offsetHeight, true);
+      setTimeout(() => {
+        p.onClose();
+        place(0, false);
+      }, reducedMotion() ? 0 : 180);
+    } else place(0, true);
+  };
+
   return (
     <dialog ref={el} class="sheet" aria-label={p.label} onClose={p.onClose} onCancel={p.onClose} onClick={onClick}>
-      <div class="sheet-body">
+      <div class="sheet-body" ref={body} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
         <div class="grabber" aria-hidden="true" />
         <Show when={p.open}>{p.children}</Show>
       </div>
