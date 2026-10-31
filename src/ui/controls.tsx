@@ -1,6 +1,6 @@
 import { For, Show, createEffect, onCleanup, type JSX } from "solid-js";
 import { buzz } from "../platform/device";
-import { claims, offsetFor, shouldDismiss, velocityOf } from "./sheetDrag";
+import { claims, offsetFor, pushSample, releaseVelocity, shouldDismiss, type Sample } from "./sheetDrag";
 
 // ── bottom sheet on native <dialog>: focus trap, Escape, and inertness for free ──
 export const Sheet = (p: { open: boolean; onClose: () => void; children: JSX.Element; label: string }) => {
@@ -19,7 +19,7 @@ export const Sheet = (p: { open: boolean; onClose: () => void; children: JSX.Ele
 
   // ── drag down to dismiss ──
   let body!: HTMLDivElement;
-  type Drag = { id: number; x0: number; y0: number; claimed: boolean; prev: { y: number; t: number }; last: { y: number; t: number } };
+  type Drag = { id: number; x0: number; y0: number; claimed: boolean; samples: Sample[] };
   let drag: Drag | null = null;
   /** Controls with their own drag or text input keep it. */
   const ownsGesture = (t: EventTarget | null) => t instanceof Element && !!t.closest("input, textarea, select, [role=slider], .ruler-track");
@@ -35,30 +35,34 @@ export const Sheet = (p: { open: boolean; onClose: () => void; children: JSX.Ele
   };
   const down = (e: PointerEvent) => {
     if (drag || ownsGesture(e.target) || (e.pointerType === "mouse" && e.button !== 0)) return;
-    const pt = { y: e.clientY, t: e.timeStamp };
-    drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, claimed: false, prev: pt, last: pt };
+    drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, claimed: false, samples: [{ y: e.clientY, t: e.timeStamp }] };
   };
   const move = (e: PointerEvent) => {
     if (!drag || e.pointerId !== drag.id) return;
     const dx = e.clientX - drag.x0;
     const dy = e.clientY - drag.y0;
+    drag.samples = pushSample(drag.samples, { y: e.clientY, t: e.timeStamp });
     if (!drag.claimed) {
       if (!claims(dx, dy)) return;
       drag.claimed = true;
       body.setPointerCapture(e.pointerId);
     }
-    drag.prev = drag.last;
-    drag.last = { y: e.clientY, t: e.timeStamp };
     place(offsetFor(dy), false);
   };
   const up = (e: PointerEvent) => {
     if (!drag || e.pointerId !== drag.id) return;
     const d = drag;
     drag = null;
-    if (!d.claimed) return; // a tap: let the click through
-    swallowClick();
+    const dx = e.clientX - d.x0;
     const dy = e.clientY - d.y0;
-    if (e.type !== "pointercancel" && shouldDismiss(dy, velocityOf(d.prev, d.last), body.offsetHeight)) {
+    // A fast flick can arrive with no moves in between (moves are coalesced per frame): judge the
+    // whole gesture at release too, not only from the moves seen.
+    if (!d.claimed && !claims(dx, dy)) return; // a tap: let the click through
+    swallowClick();
+    const last = d.samples[d.samples.length - 1];
+    // Count the release point only if it moved; a lift in place must not dilute the flick.
+    const samples = e.clientY !== last.y ? pushSample(d.samples, { y: e.clientY, t: e.timeStamp }) : d.samples;
+    if (e.type !== "pointercancel" && shouldDismiss(dy, releaseVelocity(samples, e.timeStamp), body.offsetHeight)) {
       place(body.offsetHeight, true);
       setTimeout(() => {
         p.onClose();
