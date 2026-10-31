@@ -1,12 +1,12 @@
 import { For, Match, Show, Switch } from "solid-js";
 import { TempoProvider, createTempo, useTempo, type Tab } from "./app/tempo";
-import { Sets } from "./screens/Sets";
+import { Presets } from "./screens/Presets";
 import { Sheets } from "./screens/Sheets";
 import { Unit } from "./screens/Unit";
 import { Voice } from "./screens/Voice";
 import * as Icon from "./ui/icons";
 
-const TABS: readonly Tab[] = ["unit", "voice", "sets"];
+const TABS: readonly Tab[] = ["unit", "voice", "presets"];
 
 const Shell = () => {
   const t = useTempo();
@@ -26,8 +26,8 @@ const Shell = () => {
         <Match when={t.tab() === "voice"}>
           <Voice />
         </Match>
-        <Match when={t.tab() === "sets"}>
-          <Sets />
+        <Match when={t.tab() === "presets"}>
+          <Presets />
         </Match>
       </Switch>
 

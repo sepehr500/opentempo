@@ -1,8 +1,9 @@
 import { For, Match, Show, Switch, createMemo } from "solid-js";
 import { useTempo } from "../app/tempo";
-import { moveSong, removeSong, updateSong } from "../core/sets";
+import { valuesOf } from "../core/presets";
+import { meta } from "./Presets";
 import { capabilities } from "../platform/capabilities";
-import { canInstall, install } from "../platform/install";
+import { canInstall, install, shareLink } from "../platform/install";
 import { formatClock } from "../state";
 import { Choice, RangeRuler, Sheet, SheetHeader, Stepper } from "../ui/controls";
 import * as Icon from "../ui/icons";
@@ -101,40 +102,39 @@ const CountInSheet = () => {
   );
 };
 
-const SongSheet = () => {
+const PresetSheet = () => {
   const t = useTempo();
-  const song = () => t.activeSet().songs.find((s) => s.id === t.editing());
-  const patch = (p: Parameters<typeof updateSong>[2]) => t.updateActiveSet((set) => updateSong(set, t.editing()!, p));
+  const preset = () => t.prefs.presets.find((p) => p.id === t.editing());
   return (
-    <Show when={song()}>
-      {(s) => (
+    <Show when={preset()}>
+      {(p) => (
         <>
           <header class="sheet-head">
-            <input class="name-input" aria-label="song name" value={s().name} maxLength={40} onChange={(e) => patch({ name: e.currentTarget.value.trim() || s().name })} />
+            <input
+              class="name-input"
+              aria-label="preset name"
+              value={p().name}
+              maxLength={40}
+              onChange={(e) => t.editPreset(p().id, { name: e.currentTarget.value.trim() || p().name })}
+            />
           </header>
-          <div class="grid two">
-            <div>
-              <h3 class="section-label">tempo</h3>
-              <Stepper label="tempo" value={s().bpm} min={20} max={300} unit="bpm" onChange={(v) => patch({ bpm: v })} />
-            </div>
-            <div>
-              <h3 class="section-label">length</h3>
-              <Stepper label="length in bars" value={(s().bars ?? 0) / 4} min={0} max={64} format={(v) => (v ? String(v * 4) : "∞")} unit={s().bars ? "bars" : ""} onChange={(v) => patch({ bars: v ? v * 4 : null })} />
-            </div>
+          <div class="preset-summary">
+            <span class="sheet-readout">
+              {p().bpm}
+              <small>bpm</small>
+            </span>
+            <span class="preset-meta">{meta(p())}</span>
           </div>
-          <div class="grid">
-            <button class="key wide" aria-label="move up" onClick={() => t.updateActiveSet((set) => moveSong(set, s().id, -1))}>↑</button>
-            <button class="key wide" aria-label="move down" onClick={() => t.updateActiveSet((set) => moveSong(set, s().id, 1))}>↓</button>
-            <button class="key wide" onClick={() => patch({ bpm: t.prefs.bpm, beatsPerBar: t.prefs.beatsPerBar, subdivision: t.prefs.subdivision, voice: t.prefs.voice })}>
-              <span>use unit</span>
+          <div class="grid two">
+            <button class="key wide" onClick={() => { t.editPreset(p().id, valuesOf(t.prefs)); t.say("updated"); }}>
+              <span>use current</span>
             </button>
             <button
               class="key wide danger"
               onClick={() => {
-                const id = s().id;
+                const id = p().id;
                 t.setSheet(null);
-                t.updateActiveSet((set) => removeSong(set, id));
-                t.setPrefs("activeSong", (i) => Math.min(i, t.activeSet().songs.length - 1));
+                t.deletePreset(id);
               }}
             >
               <span>delete</span>
@@ -162,15 +162,7 @@ const MenuSheet = () => {
         <button
           class="key wide span-2"
           onClick={async () => {
-            try {
-              if (navigator.share) await navigator.share({ title: "tempo", url: location.origin });
-              else {
-                await navigator.clipboard.writeText(location.origin);
-                t.say("link copied");
-              }
-            } catch {
-              /* dismissed */
-            }
+            if ((await shareLink("tempo", location.origin)) === "copied") t.say("link copied");
           }}
         >
           <Icon.Share />
@@ -181,7 +173,7 @@ const MenuSheet = () => {
   );
 };
 
-const TITLES: Record<string, string> = { random: "random tempo", gap: "gap trainer", timer: "practice timer", countIn: "count-in", song: "song", menu: "menu" };
+const TITLES: Record<string, string> = { random: "random tempo", gap: "gap trainer", timer: "practice timer", countIn: "count-in", preset: "preset", menu: "menu" };
 
 export const Sheets = () => {
   const t = useTempo();
@@ -192,7 +184,7 @@ export const Sheets = () => {
         <Match when={t.sheet() === "gap"}><GapSheet /></Match>
         <Match when={t.sheet() === "timer"}><TimerSheet /></Match>
         <Match when={t.sheet() === "countIn"}><CountInSheet /></Match>
-        <Match when={t.sheet() === "song"}><SongSheet /></Match>
+        <Match when={t.sheet() === "preset"}><PresetSheet /></Match>
         <Match when={t.sheet() === "menu"}><MenuSheet /></Match>
       </Switch>
     </Sheet>

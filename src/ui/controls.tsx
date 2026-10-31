@@ -8,7 +8,7 @@ export const Sheet = (p: { open: boolean; onClose: () => void; children: JSX.Ele
     if (p.open && !el.open) {
       // Cover everything from the function row down, so no key tops peek above the sheet.
       const row = document.querySelector(".fn-row");
-      const top = row ? row.getBoundingClientRect().top : innerHeight * 0.45;
+      const top = row ? row.getBoundingClientRect().top : innerHeight; // no function row: fit content
       el.style.setProperty("--sheet-min", `${Math.max(0, innerHeight - top)}px`);
       el.showModal();
     }

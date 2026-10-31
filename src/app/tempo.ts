@@ -1,22 +1,21 @@
 // The app's state and actions in one place. Screens read signals and call actions; nothing else
 // touches the engine or storage.
-import { batch, createContext, createEffect, createMemo, createSignal, on, onCleanup, useContext } from "solid-js";
+import { createContext, createEffect, createMemo, createSignal, on, onCleanup, useContext } from "solid-js";
 import { createStore, produce, reconcile } from "solid-js/store";
 import { createEngine } from "../audio/engine";
 import type { VoiceId } from "../audio/voices";
-import { addSong, decodeSet, encodeSet, isSongEnd, newId, step, type SetList, type Song } from "../core/sets";
+import { addPreset, matches, removePreset, updatePreset, valuesOf, type Preset } from "../core/presets";
 import { addTap, tapBpm } from "../core/tap";
 import { MAX_BPM, MIN_BPM, clampBpm } from "../core/timeline";
 import type { Click } from "../core/types";
 import { artworkFor, cssVar } from "../platform/artwork";
 import { capabilities } from "../platform/capabilities";
 import { buzz, createWakeLock, setupMediaSession } from "../platform/device";
-import { shareLink } from "../platform/install";
 import { load, persistStorage, save } from "../platform/persist";
 import { DEFAULT_PREFS, effectiveFeel, hydrate, toSettings, type Prefs } from "../state";
 
-export type Tab = "unit" | "voice" | "sets";
-export type SheetId = "random" | "gap" | "timer" | "countIn" | "menu" | "song" | null;
+export type Tab = "unit" | "voice" | "presets";
+export type SheetId = "random" | "gap" | "timer" | "countIn" | "menu" | "preset" | null;
 
 export const createTempo = () => {
   const [prefs, setPrefs] = createStore<Prefs>(structuredClone(DEFAULT_PREFS));
@@ -28,19 +27,14 @@ export const createTempo = () => {
   const [flash, setFlash] = createSignal(false);
   const [tab, setTab] = createSignal<Tab>("unit");
   const [sheet, setSheet] = createSignal<SheetId>(null);
-  const [editing, setEditing] = createSignal<string | null>(null); // song id in the song sheet
+  const [editing, setEditing] = createSignal<string | null>(null); // preset id in the preset sheet
   const [toast, setToast] = createSignal<string | null>(null);
-  /** Bar index (in engine numbering) where the current song started; for per-song bar counts. */
-  const [songStartBar, setSongStartBar] = createSignal(0);
   let taps: number[] = [];
 
   const settings = createMemo(() => toSettings(prefs, seed()));
   const feel = createMemo(() => effectiveFeel({ ...prefs.feel }, capabilities));
-  const activeSet = createMemo<SetList>(() => prefs.sets.find((s) => s.id === prefs.activeSet) ?? prefs.sets[0]);
-  const song = createMemo<Song | undefined>(() => activeSet().songs[prefs.activeSong]);
-  const nextSong = createMemo<Song | undefined>(() => activeSet().songs[prefs.activeSong + 1]);
+  const activePreset = createMemo<Preset | undefined>(() => prefs.presets.find((p) => matches(p, prefs)));
   const shownBpm = () => (playing() && now() && !now()!.countIn ? now()!.bpm : prefs.bpm);
-  const songBar = () => (now() && !now()!.countIn ? now()!.bar - songStartBar() : -1);
   const timerLeft = () => prefs.timer.minutes * 60 - elapsed();
 
   const say = (msg: string) => {
@@ -49,25 +43,6 @@ export const createTempo = () => {
   };
 
   // ── engine ───────────────────────────────────────────────────────────
-  const loadSong = (index: number) => {
-    const s = activeSet().songs[index];
-    if (!s) return;
-    batch(() => {
-      setPrefs(
-        produce((p) => {
-          p.activeSong = index;
-          p.bpm = s.bpm;
-          p.beatsPerBar = s.beatsPerBar;
-          p.subdivision = s.subdivision;
-          p.voice = s.voice as VoiceId;
-        }),
-      );
-      const c = now();
-      // The next bar is bar 0 of the new song.
-      setSongStartBar(c && !c.countIn ? c.bar + 1 : 0);
-    });
-  };
-
   const engine = createEngine({
     onClick: (c) => {
       setNow(c);
@@ -77,19 +52,12 @@ export const createTempo = () => {
         setFlash(true);
         setTimeout(() => setFlash(false), 90);
       }
-      // Auto-next: on the last beat of the song's last bar, load the next song so it starts on the next bar.
-      if (!c.countIn && c.sub === 0 && prefs.autoNext && isSongEnd(song(), c.bar - songStartBar(), c.beat, prefs.beatsPerBar)) {
-        const n = step(activeSet(), prefs.activeSong, 1);
-        if (n === null) setTimeout(stop, (60 / c.bpm) * 1000);
-        else loadSong(n);
-      }
     },
   });
 
   const start = async () => {
     setSeed((Math.random() * 2 ** 31) | 0);
     setElapsed(0);
-    setSongStartBar(0);
     engine.setVoice(prefs.voice);
     engine.setLevel(prefs.level / 100);
     engine.setLatencyMs(prefs.latencyMs);
@@ -115,17 +83,12 @@ export const createTempo = () => {
   const media = setupMediaSession({
     play: () => void start(),
     pause: stop,
-    nudge: (d) => {
-      const set = activeSet();
-      const target = set.songs.length ? step(set, prefs.activeSong, d > 0 ? 1 : -1) : null;
-      if (target !== null) loadSong(target);
-      else setBpm(prefs.bpm + d);
-    },
+    nudge: (d) => setBpm(prefs.bpm + d),
   });
   createEffect(() => {
     const bpm = shownBpm();
     const art = loaded() ? artworkFor(String(bpm), { bg: cssVar("--color-display"), dot: cssVar("--color-accent") }) : null;
-    media.update({ bpm, playing: playing(), title: song()?.name, album: song() ? activeSet().name : undefined, artwork: art });
+    media.update({ bpm, playing: playing(), title: activePreset()?.name, artwork: art });
   });
 
   const timerId = setInterval(() => {
@@ -139,26 +102,10 @@ export const createTempo = () => {
   onCleanup(() => clearInterval(timerId));
 
   // ── persistence + shared-set links ────────────────────────────────────
-  const importFromUrl = () => {
-    const code = new URLSearchParams(location.hash.slice(1)).get("set");
-    if (!code) return;
-    history.replaceState(null, "", location.pathname);
-    const set = decodeSet(code);
-    if (!set) return say("link not valid");
-    setPrefs(produce((p) => {
-      p.sets.push(set);
-      p.activeSet = set.id;
-      p.activeSong = -1;
-    }));
-    setTab("sets");
-    say(`added ${set.name}`);
-  };
-
   void (async () => {
     setPrefs(reconcile(hydrate(await load<Partial<Prefs>>("prefs", {}))));
     setLoaded(true);
     void persistStorage();
-    importFromUrl();
   })();
   createEffect(() => {
     const snapshot = JSON.parse(JSON.stringify(prefs)) as Prefs;
@@ -174,23 +121,22 @@ export const createTempo = () => {
     if (bpm) setBpm(bpm);
   };
 
-  const updateActiveSet = (fn: (s: SetList) => SetList) =>
-    setPrefs("sets", (sets) => sets.map((s) => (s.id === activeSet().id ? fn(s) : s)));
+  const applyPreset = (p: Preset) =>
+    setPrefs(
+      produce((x) => {
+        Object.assign(x, valuesOf(p));
+        x.voice = p.voice as VoiceId;
+      }),
+    );
 
-  const saveCurrentAsSong = () => {
-    const n = activeSet().songs.length + 1;
-    const s: Song = { id: newId(), name: `song ${n}`, bpm: prefs.bpm, beatsPerBar: prefs.beatsPerBar, subdivision: prefs.subdivision, voice: prefs.voice, bars: null };
-    updateActiveSet((set) => addSong(set, s));
-    setPrefs("activeSong", n - 1);
-    return s;
+  const savePreset = (): Preset => {
+    const list = addPreset(prefs.presets, prefs);
+    setPrefs("presets", list);
+    return list[list.length - 1];
   };
 
-  const shareSet = async () => {
-    const url = `${location.origin}${location.pathname}#set=${encodeSet(activeSet())}`;
-    const r = await shareLink(activeSet().name, url);
-    if (r === "copied") say("link copied");
-    if (r === "failed") say("couldn't share");
-  };
+  const editPreset = (id: string, patch: Partial<Omit<Preset, "id">>) => setPrefs("presets", (l) => updatePreset(l, id, patch));
+  const deletePreset = (id: string) => setPrefs("presets", (l) => removePreset(l, id));
 
   // Space bar plays/stops (keyboards, Bluetooth pedals that send space).
   const onKey = (e: KeyboardEvent) => {
@@ -202,10 +148,10 @@ export const createTempo = () => {
   onCleanup(() => window.removeEventListener("keydown", onKey));
 
   return {
-    prefs, setPrefs, playing, now, flash, feel, elapsed, timerLeft, shownBpm, songBar,
+    prefs, setPrefs, playing, now, flash, feel, elapsed, timerLeft, shownBpm,
     tab, setTab, sheet, setSheet, editing, setEditing, toast, say,
-    activeSet, song, nextSong, updateActiveSet,
-    toggle, start, stop, tap, setBpm, loadSong, saveCurrentAsSong, shareSet,
+    activePreset, applyPreset, savePreset, editPreset, deletePreset,
+    toggle, start, stop, tap, setBpm,
     preview: (v: VoiceId) => void engine.preview(v),
     limits: { MIN_BPM, MAX_BPM },
   };

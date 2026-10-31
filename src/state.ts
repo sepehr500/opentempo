@@ -1,5 +1,5 @@
 // Persisted user preferences → derived timeline Settings. Pure functions plus one store.
-import type { SetList } from "./core/sets";
+import type { Preset } from "./core/presets";
 import type { Settings, Subdivision } from "./core/types";
 import type { VoiceId } from "./audio/voices";
 import type { Capabilities } from "./platform/capabilities";
@@ -17,11 +17,7 @@ export type Prefs = {
   feel: Feel;
   /** Manual headphone (Bluetooth) delay, applied to visuals and buzz. */
   latencyMs: number;
-  sets: SetList[];
-  activeSet: string;
-  /** Index of the loaded song in the active set, or -1 when none is loaded. */
-  activeSong: number;
-  autoNext: boolean;
+  presets: Preset[];
 };
 
 /** Voice → feel settings. Each depends on a device capability. */
@@ -58,10 +54,7 @@ export const DEFAULT_PREFS: Prefs = {
   countIn: { on: false, bars: 1 },
   feel: { buzz: true, flash: false, stayAwake: true },
   latencyMs: 0,
-  sets: [{ id: "default", name: "my set", songs: [] }],
-  activeSet: "default",
-  activeSong: -1,
-  autoNext: true,
+  presets: [],
 };
 
 /** Merge stored prefs over defaults so new fields get sane values after upgrades. */
@@ -73,7 +66,7 @@ export const hydrate = (stored: Partial<Prefs> | undefined): Prefs => ({
   timer: { ...DEFAULT_PREFS.timer, ...stored?.timer },
   countIn: { ...DEFAULT_PREFS.countIn, ...stored?.countIn },
   feel: { ...DEFAULT_PREFS.feel, ...stored?.feel },
-  sets: stored?.sets?.length ? stored.sets : DEFAULT_PREFS.sets,
+  presets: Array.isArray(stored?.presets) ? stored.presets : [],
 });
 
 export const toSettings = (p: Prefs, seed: number): Settings => ({

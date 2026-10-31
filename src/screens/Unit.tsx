@@ -28,7 +28,7 @@ export const Display = () => {
               <Show when={c().muted}>
                 <Icon.Muted />
               </Show>
-              {c().countIn ? "count" : `bar ${t.songBar() + 1}`}
+              {c().countIn ? "count" : `bar ${c().bar + 1}`}
             </span>
           )}
         </Show>

@@ -134,3 +134,9 @@ export const Square = () => (
     <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor" />
   </S>
 );
+
+export const Check = () => (
+  <S size={14} view={14}>
+    <path d="M2.5 7.5l3 3 6-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  </S>
+);
