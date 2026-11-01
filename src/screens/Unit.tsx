@@ -86,7 +86,7 @@ export const Unit = () => {
       <section class="grid fn-row">
         <FnKey label="random" on={p.random.on} value={`${p.random.min}–${p.random.max}`} icon={<Icon.Dice />} onClick={() => t.setSheet("random")} />
         <FnKey label="gap" on={p.gap.on} value={`${p.gap.play} : ${p.gap.mute}`} icon={<Icon.Gap />} onClick={() => t.setSheet("gap")} />
-        <FnKey label="timer" on={p.timer.on} value={formatClock(p.timer.minutes * 60)} icon={<Icon.Timer />} onClick={() => t.setSheet("timer")} />
+        <FnKey label="timer" on={p.timer.on} value={formatClock(t.playing() && p.timer.on ? t.timerLeft() : p.timer.minutes * 60)} icon={<Icon.Timer />} onClick={() => t.setSheet("timer")} />
         <FnKey label="count-in" on={p.countIn.on} value={`${p.countIn.bars} ${p.countIn.bars === 1 ? "bar" : "bars"}`} icon={<Icon.CountIn />} onClick={() => t.setSheet("countIn")} />
       </section>
 

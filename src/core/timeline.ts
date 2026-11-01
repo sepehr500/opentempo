@@ -112,3 +112,6 @@ export const clicksUntil = (s: Settings, until: number, from?: Cursor): Click[] 
   }
   return out;
 };
+
+/** True when a click at `time` (seconds from the timeline origin) falls at or after the practice-timer end. */
+export const pastEnd = (time: number, endAt: number | null): boolean => endAt !== null && time >= endAt - 1e-9;

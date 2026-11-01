@@ -93,6 +93,7 @@ export const createTempo = () => {
   createEffect(() => engine.setLevel(prefs.level / 100));
   createEffect(() => engine.setVoice(prefs.voice));
   createEffect(() => engine.setLatencyMs(prefs.latencyMs));
+  createEffect(() => engine.setEndAt(prefs.timer.on ? prefs.timer.minutes * 60 : null));
 
   // ── device integrations ───────────────────────────────────────────────
   const wake = createWakeLock();

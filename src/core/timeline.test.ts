@@ -154,3 +154,10 @@ describe("re-planning", () => {
     expect(origin(base)).toEqual({ index: 0, start: 0 });
   });
 });
+
+describe("practice timer end", () => {
+  it("cuts clicks at or after the end, never before", async () => {
+    const { pastEnd } = await import("./timeline");
+    expect([pastEnd(299.5, 300), pastEnd(300, 300), pastEnd(300.5, 300), pastEnd(1e6, null)]).toEqual([false, true, true, false]);
+  });
+});

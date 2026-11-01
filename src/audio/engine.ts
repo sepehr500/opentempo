@@ -1,6 +1,6 @@
 // Imperative shell around the pure timeline: schedules clicks on the audio clock
 // ("lookahead scheduling") and reports what is audible now for the UI.
-import { clicks, origin, resumeClicks } from "../core/timeline";
+import { clicks, origin, pastEnd, resumeClicks } from "../core/timeline";
 import type { Click, Settings } from "../core/types";
 import { VOICES, type VoiceId } from "./voices";
 
@@ -35,6 +35,7 @@ export const createEngine = (events: EngineEvents) => {
   let voice: VoiceId = "wood";
   let level = 0.8;
   let extraLatency = 0; // seconds; manual headphone (Bluetooth) delay
+  let endAt: number | null = null; // practice-timer end, seconds from run start: nothing is scheduled past it
   let run: Running | null = null;
   let raf = 0;
   const ticker = new Worker(new URL("./ticker.worker.ts", import.meta.url), { type: "module" });
@@ -83,7 +84,9 @@ export const createEngine = (events: EngineEvents) => {
     const horizon = ctx.currentTime + (document.visibilityState === "hidden" ? HIDDEN_LOOKAHEAD_S : LOOKAHEAD_S);
     for (;;) {
       const c = run.pending ?? run.gen.next().value;
-      if (run.t0 + c.time >= horizon) {
+      // Past the horizon, or past the practice-timer end: hold it. The end is enforced here, on the
+      // audio side, because the UI's timer check is throttled while the screen is locked.
+      if (run.t0 + c.time >= horizon || pastEnd(c.time, endAt)) {
         run.pending = c;
         break;
       }
@@ -153,6 +156,10 @@ export const createEngine = (events: EngineEvents) => {
     async preview(id: VoiceId) {
       const ac = await ensureContext();
       sound({ time: 0, bar: 0, beat: 0, sub: 0, phase: 0, kind: "accent", countIn: false, muted: false, bpm: 0 }, ac.currentTime + 0.01, id, master!);
+    },
+    /** Seconds from start after which nothing sounds (the practice timer), or null for no end. */
+    setEndAt(seconds: number | null) {
+      endAt = seconds;
     },
     setLatencyMs(ms: number) {
       extraLatency = Math.max(0, ms) / 1000;
