@@ -3,6 +3,7 @@ import type { Preset } from "./core/presets";
 import type { Settings, Subdivision } from "./core/types";
 import type { VoiceId } from "./audio/voices";
 import type { Capabilities } from "./platform/capabilities";
+import { clampLatency } from "./core/latency";
 
 export type Prefs = {
   bpm: number;
@@ -15,7 +16,7 @@ export type Prefs = {
   timer: { on: boolean; minutes: number; atEnd: "stop" | "buzz" };
   countIn: { on: boolean; bars: 1 | 2 };
   feel: Feel;
-  /** Manual headphone (Bluetooth) delay, applied to visuals and buzz. */
+  /** Headphone (Bluetooth) delay in ms on top of what the browser reports, applied to visuals and buzz. */
   latencyMs: number;
   presets: Preset[];
 };
@@ -66,6 +67,7 @@ export const hydrate = (stored: Partial<Prefs> | undefined): Prefs => ({
   timer: { ...DEFAULT_PREFS.timer, ...stored?.timer },
   countIn: { ...DEFAULT_PREFS.countIn, ...stored?.countIn },
   feel: { ...DEFAULT_PREFS.feel, ...stored?.feel },
+  latencyMs: clampLatency(stored?.latencyMs ?? DEFAULT_PREFS.latencyMs),
   presets: Array.isArray(stored?.presets) ? stored.presets : [],
 });
 
@@ -79,6 +81,20 @@ export const toSettings = (p: Prefs, seed: number): Settings => ({
   gap: p.gap.on ? { play: p.gap.play, mute: p.gap.mute } : null,
   seed,
 });
+
+/** The headphone check: a plain steady pulse, slow enough that even a long delay can't be mistaken for the next click. */
+export const CHECK_BPM = 80;
+export const CHECK_PERIOD_MS = 60000 / CHECK_BPM;
+export const CHECK_SETTINGS: Settings = {
+  bpm: CHECK_BPM,
+  beatsPerBar: 4,
+  subdivision: 1,
+  accentFirst: true,
+  countInBars: 0,
+  random: null,
+  gap: null,
+  seed: 1,
+};
 
 /**
  * The tempo on the display. It follows the knob immediately; only random tempo shows the tempo

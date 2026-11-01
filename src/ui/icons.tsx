@@ -133,3 +133,11 @@ export const Check = () => (
     <path d="M2.5 7.5l3 3 6-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   </S>
 );
+
+export const Headphones = () => (
+  <S>
+    <path d="M3 11.5V9a6 6 0 0 1 12 0v2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+    <rect x="2" y="10.5" width="4" height="5.5" rx="1.5" fill="currentColor" />
+    <rect x="12" y="10.5" width="4" height="5.5" rx="1.5" fill="currentColor" />
+  </S>
+);

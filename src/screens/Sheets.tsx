@@ -2,6 +2,7 @@ import { For, Match, Show, Switch, createMemo } from "solid-js";
 import { useTempo } from "../app/tempo";
 import { valuesOf } from "../core/presets";
 import { meta } from "./Presets";
+import { LatencySheet } from "./Latency";
 import { capabilities } from "../platform/capabilities";
 import { formatClock } from "../state";
 import { Choice, RangeRuler, Sheet, SheetHeader, Stepper } from "../ui/controls";
@@ -145,7 +146,7 @@ const PresetSheet = () => {
   );
 };
 
-const TITLES: Record<string, string> = { random: "random tempo", gap: "gap trainer", timer: "practice timer", countIn: "count-in", preset: "preset" };
+const TITLES: Record<string, string> = { random: "random tempo", gap: "gap trainer", timer: "practice timer", countIn: "count-in", preset: "preset", latency: "headphone delay" };
 
 export const Sheets = () => {
   const t = useTempo();
@@ -157,6 +158,7 @@ export const Sheets = () => {
         <Match when={t.sheet() === "timer"}><TimerSheet /></Match>
         <Match when={t.sheet() === "countIn"}><CountInSheet /></Match>
         <Match when={t.sheet() === "preset"}><PresetSheet /></Match>
+        <Match when={t.sheet() === "latency"}><LatencySheet /></Match>
       </Switch>
     </Sheet>
   );

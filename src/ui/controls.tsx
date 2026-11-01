@@ -1,5 +1,6 @@
 import { For, Show, createEffect, onCleanup, type JSX } from "solid-js";
 import { buzz } from "../platform/device";
+import { holdDelay } from "./hold";
 import { claims, offsetFor, pushSample, releaseVelocity, shouldDismiss, type Sample } from "./sheetDrag";
 
 // ── bottom sheet on native <dialog>: focus trap, Escape, and inertness for free ──
@@ -149,6 +150,41 @@ export const Stepper = (p: { value: number; min: number; max: number; unit?: str
         +
       </button>
     </div>
+  );
+};
+
+// ── nudge key: one step per tap; held, it repeats and speeds up ──
+export const NudgeKey = (p: { label: string; disabled?: boolean; onStep: () => void; children: JSX.Element }) => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let repeats = 0;
+  const stop = () => clearTimeout(timer);
+  const repeat = () => {
+    if (p.disabled) return;
+    p.onStep();
+    timer = setTimeout(repeat, holdDelay(++repeats));
+  };
+  const down = (e: PointerEvent) => {
+    if (p.disabled || (e.pointerType === "mouse" && e.button !== 0)) return;
+    stop();
+    repeats = 0;
+    timer = setTimeout(repeat, holdDelay(0));
+  };
+  onCleanup(stop);
+  return (
+    <button
+      class="key nudge-key"
+      aria-label={p.label}
+      disabled={p.disabled}
+      onPointerDown={down}
+      onPointerUp={stop}
+      onPointerLeave={stop}
+      onPointerCancel={stop}
+      // A tap is one step; a hold already stepped. Keyboard activation (detail 0) is always a step.
+      onClick={(e) => (e.detail === 0 || repeats === 0) && p.onStep()}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      {p.children}
+    </button>
   );
 };
 

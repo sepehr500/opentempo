@@ -3,7 +3,7 @@ import { VOICES, type VoiceId } from "../audio/voices";
 import { useTempo } from "../app/tempo";
 import { capabilities } from "../platform/capabilities";
 import { feelAvailable, type Feel } from "../state";
-import { Stepper, Toggle } from "../ui/controls";
+import { Toggle } from "../ui/controls";
 import { DotMatrix } from "../ui/DotMatrix";
 import { VoiceIcon } from "../ui/icons";
 import { Scope, type Strike } from "../ui/Scope";
@@ -76,10 +76,18 @@ export const Voice = () => {
             </div>
           )}
         </For>
-        <div class="row">
+        <button
+          class="row row-button"
+          aria-haspopup="dialog"
+          aria-label={`headphone delay, ${t.prefs.latencyMs}ms`}
+          onClick={() => {
+            t.setSheet("latency");
+            t.check.start(); // inside the tap: it may have to start the audio
+          }}
+        >
           <span>headphone delay</span>
-          <Stepper label="headphone delay" value={t.prefs.latencyMs / 10} min={0} max={40} format={(v) => `${v * 10}ms`} onChange={(v) => t.setPrefs("latencyMs", v * 10)} />
-        </div>
+          <span class="row-key">{t.prefs.latencyMs}ms</span>
+        </button>
       </section>
     </>
   );

@@ -671,8 +671,87 @@ small {
   border-top: 1px solid var(--color-seam);
   font-size: 16px;
 }
+.row-button {
+  width: 100%;
+  text-align: left;
+}
+.row-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  min-width: 72px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--color-key);
+  box-shadow: 0 2px 0 var(--color-seam);
+  font: 13px/1 var(--font-mono);
+}
+.row-button:active .row-key {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 var(--color-seam);
+}
 .row.unavailable > span {
   color: var(--color-tick);
+}
+
+/* ── headphone delay sheet ───────────────────── */
+.latency-display {
+  margin: 0;
+  gap: 10px;
+}
+.latency-main {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  min-height: 68px; /* the digits' height: the panel doesn't jump while there is no value yet */
+}
+.latency-main .dot-matrix {
+  max-width: 80%;
+}
+.latency-display .beat-bar,
+.tap-bar {
+  flex: 1;
+  display: flex;
+  gap: 4px;
+}
+.tap-bar span {
+  flex: 1;
+  height: 8px;
+  border-radius: 3px;
+  background: var(--color-dot-off);
+}
+.tap-bar span.on {
+  background: var(--color-dot-on);
+}
+.key.nudge-key {
+  height: 56px;
+  align-items: center;
+  justify-content: center;
+  font: 700 17px/1 var(--font-mono);
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+.key.tap-key {
+  height: 128px; /* the two rows it replaces, so nothing moves while tapping */
+  padding: 14px 16px;
+  font-size: 20px;
+  font-weight: 700;
+  touch-action: none;
+}
+.sheet .key.slate {
+  background: var(--color-slate);
+  box-shadow: 0 2px 0 var(--color-slate-rim);
+}
+.latency-head {
+  min-height: 32px; /* the cancel key comes and goes without moving the sheet */
+}
+.key.head-key {
+  height: 32px;
+  padding: 0 12px;
+  justify-content: center;
+  font: 12px/1 var(--font-mono);
+  letter-spacing: 0.04em;
 }
 
 /* ── presets ────────────────────────────────── */
