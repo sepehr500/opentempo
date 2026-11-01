@@ -13,6 +13,7 @@ import { artworkFor, cssVar } from "../platform/artwork";
 import { settled } from "./settled";
 import { capabilities } from "../platform/capabilities";
 import { buzz, createWakeLock, setupMediaSession } from "../platform/device";
+import { onLaunchTab } from "../platform/launch";
 import { load, persistStorage, save } from "../platform/persist";
 import { CHECK_SETTINGS, DEFAULT_PREFS, effectiveFeel, hydrate, toSettings, type Prefs, displayBpm } from "../state";
 
@@ -28,6 +29,7 @@ export const createTempo = () => {
   const [seed, setSeed] = createSignal(1);
   const [flash, setFlash] = createSignal(false);
   const [tab, setTab] = createSignal<Tab>("unit");
+  onLaunchTab(setTab); // home-screen shortcuts: /?tab=voice, /?tab=presets
   const [sheet, setSheet] = createSignal<SheetId>(null);
   const [editing, setEditing] = createSignal<string | null>(null); // preset id in the preset sheet
   const [toast, setToast] = createSignal<string | null>(null);
