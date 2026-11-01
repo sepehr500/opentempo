@@ -115,3 +115,14 @@ export const clicksUntil = (s: Settings, until: number, from?: Cursor): Click[] 
 
 /** True when a click at `time` (seconds from the timeline origin) falls at or after the practice-timer end. */
 export const pastEnd = (time: number, endAt: number | null): boolean => endAt !== null && time >= endAt - 1e-9;
+
+/**
+ * Display pick: of the queued clicks (in time order) that are due by `heard`, show only the latest.
+ * Older due clicks are skipped, so nothing replays after the screen was locked, but the display
+ * never goes blank just because the clock ran ahead of the frames.
+ */
+export const latestDue = <C extends { readonly time: number }>(queue: readonly C[], heard: number, t0: number): { show: C | null; rest: C[] } => {
+  let i = 0;
+  while (i < queue.length && t0 + queue[i].time <= heard) i++;
+  return { show: i ? queue[i - 1] : null, rest: queue.slice(i) };
+};

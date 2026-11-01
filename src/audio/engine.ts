@@ -1,6 +1,6 @@
 // Imperative shell around the pure timeline: schedules clicks on the audio clock
 // ("lookahead scheduling") and reports what is audible now for the UI.
-import { clicks, origin, pastEnd, resumeClicks } from "../core/timeline";
+import { clicks, latestDue, origin, pastEnd, resumeClicks } from "../core/timeline";
 import type { Click, Settings } from "../core/types";
 import { VOICES, type VoiceId } from "./voices";
 
@@ -8,8 +8,6 @@ const LOOKAHEAD_S = 0.12;
 /** Hidden/locked pages may get their ticks late (timer throttling), so schedule further ahead. */
 const HIDDEN_LOOKAHEAD_S = 1.5;
 const TICK_MS = 25;
-/** Clicks heard longer ago than this (e.g. while the screen was locked) are not shown. */
-const STALE_S = 0.25;
 /** Bound on clicks queued for the display: covers the hidden lookahead at 300 bpm in 16ths. */
 const MAX_VISUAL = 64;
 
@@ -24,7 +22,7 @@ type Running = {
   gen: Generator<Click>;
   pending: Click | null;
   lastScheduled: Click | null;
-  readonly visual: Click[];
+  visual: Click[];
 };
 
 export const createEngine = (events: EngineEvents) => {
@@ -109,10 +107,9 @@ export const createEngine = (events: EngineEvents) => {
   const frame = () => {
     if (!ctx || !run) return;
     const heard = ctx.currentTime - (ctx.outputLatency || 0) - extraLatency;
-    while (run.visual.length && run.t0 + run.visual[0].time <= heard) {
-      const c = run.visual.shift()!;
-      if (heard - (run.t0 + c.time) < STALE_S) events.onClick(c);
-    }
+    const { show, rest } = latestDue(run.visual, heard, run.t0);
+    run.visual = rest;
+    if (show) events.onClick(show);
     raf = requestAnimationFrame(frame);
   };
 

@@ -161,3 +161,13 @@ describe("practice timer end", () => {
     expect([pastEnd(299.5, 300), pastEnd(300, 300), pastEnd(300.5, 300), pastEnd(1e6, null)]).toEqual([false, true, true, false]);
   });
 });
+
+describe("display pick", () => {
+  it("shows the latest due click and drops older ones", async () => {
+    const { latestDue } = await import("./timeline");
+    const q = [{ time: 0 }, { time: 0.5 }, { time: 1 }, { time: 1.5 }];
+    expect(latestDue(q, 10.6, 10)).toEqual({ show: { time: 0.5 }, rest: [{ time: 1 }, { time: 1.5 }] });
+    expect(latestDue(q, 9, 10)).toEqual({ show: null, rest: q }); // nothing due yet
+    expect(latestDue(q, 99, 10).show).toEqual({ time: 1.5 }); // far behind: still shows the newest
+  });
+});

@@ -74,11 +74,13 @@ export const createTempo = () => {
     engine.setLatencyMs(prefs.latencyMs);
     const started = engine.start(settings());
     media.play();
+    // Playing from the tap, not from when the audio context reports ready: on some phones resume()
+    // settles late while clicks already sound, which left the display dark.
+    setPlaying(true);
     try {
       await started;
-      setPlaying(true);
     } catch {
-      media.pause();
+      stop();
     }
   };
   const stop = () => {
