@@ -48,5 +48,29 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.opentempo.app"
+        }
+      ],
+      "destination": "https://opentempo.app/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "tempo-eight-chi.vercel.app"
+        }
+      ],
+      "destination": "https://opentempo.app/:path*",
+      "permanent": true
+    }
   ]
 }
