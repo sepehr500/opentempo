@@ -5,6 +5,7 @@ import { Sheets } from "./screens/Sheets";
 import { Unit } from "./screens/Unit";
 import { Voice } from "./screens/Voice";
 import { canInstall, install } from "./platform/install";
+import { Logo } from "./ui/Logo";
 
 const TABS: readonly Tab[] = ["unit", "voice", "presets"];
 
@@ -13,7 +14,10 @@ const Shell = () => {
   return (
     <main class={`screen ${t.tab()}`}>
       <header class="top">
-        <h1>{t.tab() === "unit" ? "tempo" : t.tab()}</h1>
+        <h1 class="brand">
+          <Logo beat={t.playing() && t.now() ? t.now()!.beat : null} />
+          <span>{t.tab() === "unit" ? "tempo" : t.tab()}</span>
+        </h1>
         <Show when={canInstall()}>
           <button class="install-btn" onClick={() => void install()}>
             install
