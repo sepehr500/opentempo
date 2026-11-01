@@ -90,20 +90,22 @@ export const Unit = () => {
         <FnKey label="count-in" on={p.countIn.on} value={`${p.countIn.bars} ${p.countIn.bars === 1 ? "bar" : "bars"}`} icon={<Icon.CountIn />} onClick={() => t.setSheet("countIn")} />
       </section>
 
-      <section class="grid transport">
-        <button class="key tall" aria-label={`sound: ${p.voice}`} onClick={() => t.setPrefs("voice", (v) => VOICE_ORDER[(VOICE_ORDER.indexOf(v) + 1) % VOICE_ORDER.length])}>
-          <Icon.Wave />
-          <span>{p.voice}</span>
-        </button>
-        <button class="key tall slate" onPointerDown={t.tap}>
-          <Icon.Tap />
-          <span>tap</span>
-        </button>
-        <button class={`key tall span-2 ${t.playing() ? "slate" : "accent"}`} onClick={t.toggle} aria-pressed={t.playing()}>
+      <section class="transport">
+        <div class="grid">
+          <button class="key wide span-2" aria-label={`sound: ${p.voice}`} onClick={() => t.setPrefs("voice", (v) => VOICE_ORDER[(VOICE_ORDER.indexOf(v) + 1) % VOICE_ORDER.length])}>
+            <Icon.Wave />
+            <span>{p.voice}</span>
+          </button>
+          <button class="key wide span-2 slate" onPointerDown={t.tap}>
+            <Icon.Tap />
+            <span>tap</span>
+          </button>
+        </div>
+        <button class={`key play-key ${t.playing() ? "slate" : "accent"}`} onClick={t.toggle} aria-pressed={t.playing()}>
           <Show when={t.playing()} fallback={<Icon.Play />}>
             <Icon.Stop />
           </Show>
-          <span class="big">{t.playing() ? "stop" : "play"}</span>
+          <span>{t.playing() ? "stop" : "play"}</span>
         </button>
       </section>
     </>
