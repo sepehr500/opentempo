@@ -1,7 +1,23 @@
+# dependencies and build output
 node_modules
 dist
 dev-dist
+coverage
+
+# local and secret config
 *.local
-.DS_Store
-.vercel
 .env*
+.vercel
+
+# tooling caches
+__pycache__/
+*.py[cod]
+*.log
+*.tsbuildinfo
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea
+.vscode/*
+!.vscode/extensions.json
