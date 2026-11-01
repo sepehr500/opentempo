@@ -141,3 +141,12 @@ export const Headphones = () => (
     <rect x="12" y="10.5" width="4" height="5.5" rx="1.5" fill="currentColor" />
   </S>
 );
+
+export const Share = () => (
+  <S>
+    <path d="M6.2 7.7l5.6-3.2M6.2 10.3l5.6 3.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+    <circle cx="13.5" cy="3.8" r="2.3" fill="currentColor" />
+    <circle cx="4.5" cy="9" r="2.3" fill="currentColor" />
+    <circle cx="13.5" cy="14.2" r="2.3" fill="currentColor" />
+  </S>
+);

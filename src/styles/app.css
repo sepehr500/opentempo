@@ -930,6 +930,14 @@ small {
 .top {
   min-height: 62px;
 }
+.share-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: grid;
+  place-content: center; /* .key spreads its children apart; one icon sits in the middle */
+  border-radius: 10px;
+}
 
 /* ── unit: one instrument, two modules ───────
    Top: the screen and its four encoders, which set what it shows. Bottom: the keypad (function row,

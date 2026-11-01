@@ -4,10 +4,26 @@ import { Presets } from "./screens/Presets";
 import { Sheets } from "./screens/Sheets";
 import { Unit } from "./screens/Unit";
 import { Voice } from "./screens/Voice";
-import { canInstall, install } from "./platform/install";
+import { canInstall, install, isInstalled } from "./platform/install";
+import { shareApp, shareData, shareToast } from "./platform/share";
+import * as Icon from "./ui/icons";
 import { Wordmark } from "./ui/Wordmark";
 
 const TABS: readonly Tab[] = ["unit", "voice", "presets"];
+
+const ShareKey = () => {
+  const t = useTempo();
+  const share = async () => {
+    const data = shareData(location.origin);
+    const msg = shareToast(await shareApp(navigator, data), data.url!);
+    if (msg) t.say(msg);
+  };
+  return (
+    <button class="key share-btn" aria-label="share tempo" onClick={() => void share()}>
+      <Icon.Share />
+    </button>
+  );
+};
 
 const Shell = () => {
   const t = useTempo();
@@ -17,7 +33,8 @@ const Shell = () => {
         <h1 class="brand">
           <Wordmark />
         </h1>
-        <Show when={canInstall()}>
+        {/* before installing: install; once installed: share the app */}
+        <Show when={canInstall()} fallback={<Show when={isInstalled()}><ShareKey /></Show>}>
           <button class="install-btn" onClick={() => void install()}>
             install
           </button>
