@@ -1,5 +1,6 @@
 """Rasterise Space Grotesk Bold into dot-matrix glyph sets for the display.
 Usage: python scripts/glyphs.py > src/ui/glyphs.json   (needs Pillow)
+   or: uv run --no-project --with pillow python scripts/glyphs.py > src/ui/glyphs.json
 
 Sets:
   big    digits, 17 rows tall (cap height) — the BPM on the Unit screen
