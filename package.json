@@ -1,5 +1,5 @@
 {
-  "name": "tempo",
+  "name": "opentempo",
   "private": true,
   "version": "0.1.0",
   "description": "A pocket metronome for the browser: installable, offline, no accounts.",
