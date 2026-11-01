@@ -54,11 +54,9 @@ button {
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
 }
-.logo {
-  flex-shrink: 0;
-  display: block;
+.wordmark {
+  display: block; /* x-height (rows 2–6 of 9) is the box's centre: ascender and descender balance */
 }
 
 /* ── display ────────────────────────────────── */
