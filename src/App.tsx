@@ -19,7 +19,7 @@ const ShareKey = () => {
     if (msg) t.say(msg);
   };
   return (
-    <button class="key share-btn" aria-label="share tempo" onClick={() => void share()}>
+    <button class="share-btn" aria-label="share tempo" onClick={() => void share()}>
       <Icon.Share />
     </button>
   );

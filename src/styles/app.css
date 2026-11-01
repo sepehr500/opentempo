@@ -930,13 +930,24 @@ small {
 .top {
   min-height: 62px;
 }
+/* just the icon: no key behind it. The tap area stays 40px; pressing darkens it */
 .share-btn {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   padding: 0;
+  margin-right: -11px; /* the icon, not the tap area, lines up with the content edge */
   display: grid;
-  place-content: center; /* .key spreads its children apart; one icon sits in the middle */
+  place-content: center;
   border-radius: 10px;
+  background: none;
+  color: var(--color-ink);
+}
+.share-btn:active {
+  background: var(--color-key-down);
+}
+.share-btn:focus-visible {
+  outline: 2px solid var(--color-blue-ink);
+  outline-offset: -2px;
 }
 
 /* ── unit: one instrument, two modules ───────
