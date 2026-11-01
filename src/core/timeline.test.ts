@@ -1,10 +1,11 @@
+import { meterOf } from "./meter";
 import { describe, expect, it } from "vitest";
 import { bars, bpmOfBar, clicks, clicksUntil, isMutedBar, nextCursor, origin, resumeClicks } from "./timeline";
 import type { Settings } from "./types";
 
 const base: Settings = {
   bpm: 120,
-  beatsPerBar: 4,
+  meter: meterOf("4/4"),
   subdivision: 1,
   accentFirst: true,
   countInBars: 0,
@@ -140,7 +141,7 @@ describe("re-planning", () => {
 
   it("drops to the next bar when beats per bar shrink below the due beat", () => {
     const due = take(clicks(base), 4)[3]; // beat 3
-    const [first] = take(resumeClicks({ ...base, beatsPerBar: 3 }, due), 1);
+    const [first] = take(resumeClicks({ ...base, meter: meterOf("3/4") }, due), 1);
     expect([first.bar, first.beat, first.time]).toEqual([1, 0, 1.5]);
   });
 

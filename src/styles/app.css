@@ -125,6 +125,33 @@ button {
 .display-unit {
   font: 700 22px/28px var(--font-mono);
 }
+.display-meter-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.display-pulse {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  letter-spacing: 0;
+  color: var(--color-dot-on);
+}
+/* 5/8 and 7/8: the meter is a key that cycles the grouping */
+.display-meter {
+  all: unset;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+.display-meter:focus-visible {
+  outline: 1px solid var(--color-dot-on);
+  outline-offset: 2px;
+}
+.display-grouping {
+  color: var(--color-dot-on);
+}
 .display-sub {
   display: flex;
   align-items: center;

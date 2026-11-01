@@ -1,21 +1,22 @@
 import { For, Show } from "solid-js";
 import { useTempo } from "../app/tempo";
+import { groupingLabel, meterOf, splitWord } from "../core/meter";
 import type { Preset } from "../core/presets";
 import { DotMatrix } from "../ui/DotMatrix";
 import * as Icon from "../ui/icons";
 
-/** Tiny bar meter: one tick per beat, accent on beat 1. */
-const Meter = (p: { beats: number }) => (
+/** Tiny bar meter: one tick per group, accent on the first. */
+const Meter = (p: { groups: number }) => (
   <span class="meter" aria-hidden="true">
-    <For each={Array.from({ length: Math.min(p.beats, 8) }, (_, i) => i)}>{(i) => <span class="meter-tick" classList={{ one: i === 0 }} />}</For>
+    <For each={Array.from({ length: Math.min(p.groups, 8) }, (_, i) => i)}>{(i) => <span class="meter-tick" classList={{ one: i === 0 }} />}</For>
   </span>
 );
 
-const SPLIT_WORD: Record<number, string> = { 2: "8ths", 3: "triplets", 4: "16ths" };
-
-/** "4/4 · wood", or "4/4 · triplets · wood" when the beat is split. */
-export const meta = (p: { beatsPerBar: number; subdivision: number; voice: string }) =>
-  [`${p.beatsPerBar}/4`, SPLIT_WORD[p.subdivision], p.voice].filter(Boolean).join(" · ");
+/** "4/4 · wood", "4/4 · triplets · wood", "7/8 2+2+3 · 8ths · wood". */
+export const meta = (p: { meter: string; subdivision: number; voice: string }) => {
+  const m = meterOf(p.meter);
+  return [[m.label, groupingLabel(m)].filter(Boolean).join(" "), splitWord(m, p.subdivision), p.voice].filter(Boolean).join(" · ");
+};
 
 export const Presets = () => {
   const t = useTempo();
@@ -52,7 +53,7 @@ export const Presets = () => {
                   <span class="preset-name">{p.name}</span>
                   <span class="preset-meta">{meta(p)}</span>
                 </span>
-                <Meter beats={p.beatsPerBar} />
+                <Meter groups={meterOf(p.meter).groups.length} />
                 <span class="preset-bpm">{p.bpm}</span>
               </button>
               <button class="key preset-edit" aria-label={`edit ${p.name}`} onClick={() => edit(p)}>

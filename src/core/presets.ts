@@ -3,7 +3,8 @@ import type { Subdivision } from "./types";
 
 export type PresetValues = {
   readonly bpm: number;
-  readonly beatsPerBar: number;
+  /** Time signature id (core/meter.ts). */
+  readonly meter: string;
   readonly subdivision: Subdivision;
   readonly voice: string;
 };
@@ -17,7 +18,7 @@ export const newId = (): string => Math.random().toString(36).slice(2, 10);
 
 export const valuesOf = (p: PresetValues): PresetValues => ({
   bpm: p.bpm,
-  beatsPerBar: p.beatsPerBar,
+  meter: p.meter,
   subdivision: p.subdivision,
   voice: p.voice,
 });
@@ -25,7 +26,7 @@ export const valuesOf = (p: PresetValues): PresetValues => ({
 /** True when the current settings are exactly this preset (drives the highlight). */
 export const matches = (preset: PresetValues, current: PresetValues): boolean =>
   preset.bpm === current.bpm &&
-  preset.beatsPerBar === current.beatsPerBar &&
+  preset.meter === current.meter &&
   preset.subdivision === current.subdivision &&
   preset.voice === current.voice;
 

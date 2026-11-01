@@ -116,10 +116,12 @@ export const createEngine = (events: EngineEvents) => {
   ticker.onmessage = schedule;
 
   /** Re-plan from the next unscheduled click; already-scheduled audio is left alone. */
+  // Keeps the next unscheduled click as `pending`, so several changes between two scheduler
+  // ticks (a fast knob turn) each re-plan from it; none is lost.
   const replan = (s: Settings) => {
-    if (!run?.pending) return;
-    run.gen = resumeClicks(s, run.pending);
-    run.pending = null;
+    if (!run) return;
+    run.gen = resumeClicks(s, run.pending ?? run.gen.next().value);
+    run.pending = run.gen.next().value;
   };
 
   return {
