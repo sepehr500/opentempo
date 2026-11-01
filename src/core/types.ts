@@ -1,5 +1,3 @@
-import type { Meter } from "./meter";
-
 export type Subdivision = 1 | 2 | 3 | 4;
 
 export type RandomTempo = {
@@ -18,8 +16,7 @@ export type Gap = {
 
 export type Settings = {
   readonly bpm: number;
-  readonly meter: Meter;
-  /** /4: each quarter split 1-4 ways. /8: 1 pulse, 2 eighths, 3 sixteenths. */
+  readonly beatsPerBar: number;
   readonly subdivision: Subdivision;
   readonly accentFirst: boolean;
   readonly countInBars: number; // 0 = off
@@ -43,9 +40,9 @@ export type ClickKind = "accent" | "beat" | "sub";
 export type Click = {
   readonly time: number;
   readonly bar: number;
-  readonly beat: number; // 0-based group within the bar (a beat in /4)
-  readonly sub: number; // 0-based click within the group
-  /** Position in counted beats from the start of the bar. */
+  readonly beat: number; // 0-based beat within the bar
+  readonly sub: number; // 0-based subdivision within the beat
+  /** Position in beats from the start of the bar (beat + sub/subdivision). */
   readonly phase: number;
   readonly kind: ClickKind;
   readonly countIn: boolean;

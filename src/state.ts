@@ -4,12 +4,11 @@ import type { Settings, Subdivision } from "./core/types";
 import type { VoiceId } from "./audio/voices";
 import type { Capabilities } from "./platform/capabilities";
 import { clampLatency } from "./core/latency";
-import { DEFAULT_METER, meterFromBeats, meterOf } from "./core/meter";
+import { fromSignature } from "./core/signature";
 
 export type Prefs = {
   bpm: number;
-  /** Time signature id, see core/meter.ts: "4/4", "6/8", "7/8 2+2+3". */
-  meter: string;
+  beatsPerBar: number;
   subdivision: Subdivision;
   level: number; // 0..100
   voice: VoiceId;
@@ -47,7 +46,7 @@ export const effectiveFeel = (feel: Feel, caps: Capabilities): Feel => ({
 
 export const DEFAULT_PREFS: Prefs = {
   bpm: 120,
-  meter: DEFAULT_METER,
+  beatsPerBar: 4,
   subdivision: 1,
   level: 80,
   voice: "wood",
@@ -60,32 +59,32 @@ export const DEFAULT_PREFS: Prefs = {
   presets: [],
 };
 
-/** Before time signatures, prefs and presets stored beats per bar (all /4). */
-type Legacy = { beatsPerBar?: number; meter?: string };
-const meterIdOf = (x: Legacy | undefined, fallback: string): string =>
-  typeof x?.meter === "string" ? meterOf(x.meter).id : typeof x?.beatsPerBar === "number" ? meterFromBeats(x.beatsPerBar) : fallback;
-const withoutLegacy = <T extends object>(x: T): T => {
-  const { beatsPerBar: _, ...rest } = x as T & Legacy;
-  return rest as T;
+/** One release stored a time signature instead of beats × split; convert it back. */
+const fromLegacy = <T extends object>(x: T): T => {
+  const { meter, ...rest } = x as T & { meter?: unknown };
+  const sig = typeof meter === "string" ? fromSignature(meter) : null;
+  return (sig ? { ...rest, ...sig } : rest) as T;
 };
 
 /** Merge stored prefs over defaults so new fields get sane values after upgrades. */
-export const hydrate = (stored: Partial<Prefs> | undefined): Prefs => ({
+export const hydrate = (raw: Partial<Prefs> | undefined): Prefs => {
+  const stored = raw ? fromLegacy(raw) : undefined;
+  return {
   ...DEFAULT_PREFS,
-  ...(stored ? withoutLegacy(stored) : {}),
-  meter: meterIdOf(stored as Legacy | undefined, DEFAULT_PREFS.meter),
+  ...stored,
   random: { ...DEFAULT_PREFS.random, ...stored?.random },
   gap: { ...DEFAULT_PREFS.gap, ...stored?.gap },
   timer: { ...DEFAULT_PREFS.timer, ...stored?.timer },
   countIn: { ...DEFAULT_PREFS.countIn, ...stored?.countIn },
   feel: { ...DEFAULT_PREFS.feel, ...stored?.feel },
   latencyMs: clampLatency(stored?.latencyMs ?? DEFAULT_PREFS.latencyMs),
-  presets: Array.isArray(stored?.presets) ? stored.presets.map((p) => ({ ...withoutLegacy(p), meter: meterIdOf(p as Legacy, DEFAULT_METER) })) : [],
-});
+  presets: Array.isArray(stored?.presets) ? stored.presets.map(fromLegacy) : [],
+  };
+};
 
 export const toSettings = (p: Prefs, seed: number): Settings => ({
   bpm: p.bpm,
-  meter: meterOf(p.meter),
+  beatsPerBar: p.beatsPerBar,
   subdivision: p.subdivision,
   accentFirst: true,
   countInBars: p.countIn.on ? p.countIn.bars : 0,
@@ -99,7 +98,7 @@ export const CHECK_BPM = 80;
 export const CHECK_PERIOD_MS = 60000 / CHECK_BPM;
 export const CHECK_SETTINGS: Settings = {
   bpm: CHECK_BPM,
-  meter: meterOf("4/4"),
+  beatsPerBar: 4,
   subdivision: 1,
   accentFirst: true,
   countInBars: 0,
@@ -118,6 +117,9 @@ export const displayBpm = (p: Pick<Prefs, "bpm" | "random">, heard: { bpm: numbe
 /** Haptic detents no closer than this: faster than a phone's vibrator can render as distinct ticks. */
 export const DETENT_GAP_MS = 40;
 export const detentDue = (now: number, last: number): boolean => now - last >= DETENT_GAP_MS;
+
+/** Split knob value: how many pieces each beat line is cut into. */
+export const splitLabel = (s: Subdivision): string => String(s);
 
 export const formatClock = (seconds: number): string => {
   const s = Math.max(0, Math.ceil(seconds));

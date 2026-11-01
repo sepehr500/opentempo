@@ -1,7 +1,6 @@
 // Functional core: settings in, timeline out. No audio, no DOM, no clock.
 import { intBetween } from "./rng";
-import { beatsOf, groupStarts, ticksOfGroup } from "./meter";
-import type { Bar, Click, Settings } from "./types";
+import type { Bar, Click, ClickKind, Settings } from "./types";
 
 export const MIN_BPM = 20;
 export const MAX_BPM = 300;
@@ -9,8 +8,8 @@ export const MAX_BPM = 300;
 export const clampBpm = (bpm: number): number =>
   Math.min(MAX_BPM, Math.max(MIN_BPM, Math.round(bpm)));
 
-/** Bar length in seconds: counted beats per bar × beat length. */
-export const barDuration = (bpm: number, s: Pick<Settings, "meter">): number => (60 / bpm) * beatsOf(s.meter);
+export const barDuration = (bpm: number, beatsPerBar: number): number =>
+  (60 / bpm) * beatsPerBar;
 
 /** Tempo of a musical bar (index >= 0), honouring random-tempo blocks. */
 export const bpmOfBar = (s: Settings, index: number): number =>
@@ -47,37 +46,34 @@ export function* bars(s: Settings, from: Cursor = origin(s)): Generator<Bar> {
   for (;;) {
     const bar = makeBar(s, index, start);
     yield bar;
-    start += barDuration(bar.bpm, s);
+    start += barDuration(bar.bpm, s.beatsPerBar);
     index += 1;
   }
 }
 
-/**
- * Every click in a bar, in time order. The first click of the bar is the accent, the first of
- * each group is a beat, the rest are subs (in 6/8: accent sub sub beat sub sub).
- * Count-in bars click group starts only.
- */
+const kindOf = (s: Settings, beat: number, sub: number): ClickKind =>
+  sub > 0 ? "sub" : beat === 0 && s.accentFirst ? "accent" : "beat";
+
+/** Every click in a bar, in time order. Count-in bars click quarter notes only. */
 export const clicksOfBar = (s: Settings, bar: Bar): Click[] => {
-  const m = s.meter;
-  const stepLen = 60 / bar.bpm / m.stepsPerBeat;
-  const split = bar.countIn ? 1 : s.subdivision;
-  const starts = groupStarts(m);
-  return m.groups.flatMap((len, beat) =>
-    ticksOfGroup(m, len, split).map((pos, sub): Click => {
-      const step = starts[beat] + pos;
-      return {
-        time: bar.start + step * stepLen,
-        bar: bar.index,
-        beat,
-        sub,
-        phase: step / m.stepsPerBeat,
-        kind: sub > 0 ? "sub" : beat === 0 && s.accentFirst ? "accent" : "beat",
-        countIn: bar.countIn,
-        muted: bar.muted,
-        bpm: bar.bpm,
-      };
-    }),
-  );
+  const beatLen = 60 / bar.bpm;
+  const subs = bar.countIn ? 1 : s.subdivision;
+  return Array.from({ length: s.beatsPerBar * subs }, (_, i) => {
+    const beat = Math.floor(i / subs);
+    const sub = i % subs;
+    const phase = beat + sub / subs;
+    return {
+      time: bar.start + phase * beatLen,
+      bar: bar.index,
+      beat,
+      sub,
+      phase,
+      kind: kindOf(s, beat, sub),
+      countIn: bar.countIn,
+      muted: bar.muted,
+      bpm: bar.bpm,
+    };
+  });
 };
 
 /** Lazily yields clicks from a cursor. */
@@ -88,7 +84,7 @@ export function* clicks(s: Settings, from: Cursor = origin(s)): Generator<Click>
 /** Cursor for the bar that follows `bar` (used to re-plan when settings change mid-play). */
 export const nextCursor = (s: Settings, bar: Bar): Cursor => ({
   index: bar.index + 1,
-  start: bar.start + barDuration(bar.bpm, s),
+  start: bar.start + barDuration(bar.bpm, s.beatsPerBar),
 });
 
 /**
@@ -97,7 +93,7 @@ export const nextCursor = (s: Settings, bar: Bar): Cursor => ({
  * (fewer beats per bar), the next bar starts at that time instead.
  */
 export const resumeCursor = (s: Settings, due: Click): Cursor => {
-  if (due.phase >= beatsOf(s.meter) - 1e-9) return { index: due.bar + 1, start: due.time };
+  if (due.phase >= s.beatsPerBar) return { index: due.bar + 1, start: due.time };
   const bpm = due.bar < 0 ? clampBpm(s.bpm) : bpmOfBar(s, due.bar);
   return { index: due.bar, start: due.time - (due.phase * 60) / bpm };
 };

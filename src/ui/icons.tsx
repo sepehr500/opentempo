@@ -141,13 +141,3 @@ export const Headphones = () => (
     <rect x="12" y="10.5" width="4" height="5.5" rx="1.5" fill="currentColor" />
   </S>
 );
-
-/** The note the tempo counts: ♩, dotted ♩ (6/8, 9/8, 12/8) or ♪ (5/8, 7/8). Drawn, not a font glyph, so the dot sits tight. */
-export const Note = (p: { kind: "quarter" | "dotted" | "eighth" }) => (
-  <svg width={p.kind === "quarter" ? 7 : 10} height="12" viewBox={`0 0 ${p.kind === "quarter" ? 7 : 10} 12`} aria-hidden="true">
-    <ellipse cx="3" cy="9.6" rx="2.6" ry="1.9" transform="rotate(-20 3 9.6)" fill="currentColor" />
-    <path d="M5.1 9V1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
-    {p.kind === "eighth" && <path d="M5.1 1.2c.4 1.8 3.4 2.6 3.4 5.2" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" />}
-    {p.kind === "dotted" && <circle cx="8.4" cy="9.4" r="1.1" fill="currentColor" />}
-  </svg>
-);
