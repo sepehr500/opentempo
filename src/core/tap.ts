@@ -11,7 +11,7 @@ export const addTap = (taps: readonly number[], now: number): number[] => {
   return kept.slice(-MAX_TAPS);
 };
 
-const median = (xs: readonly number[]): number => {
+export const median = (xs: readonly number[]): number => {
   const s = [...xs].sort((a, b) => a - b);
   const m = Math.floor(s.length / 2);
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;

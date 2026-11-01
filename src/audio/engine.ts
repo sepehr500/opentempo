@@ -165,6 +165,18 @@ export const createEngine = (events: EngineEvents) => {
       level = l;
       if (master) master.gain.value = l;
     },
+    /**
+     * Where a DOM event (its timeStamp, performance.now() clock) falls on the running timeline, in
+     * seconds, as heard after the latency the browser reports. A tap on an audible click lands at the
+     * click's time plus whatever extra delay the browser does not report. Null when not running.
+     */
+    tapTime(timeStamp: number): number | null {
+      if (!ctx || !run) return null;
+      const audioNow = ctx.currentTime - (performance.now() - timeStamp) / 1000;
+      return audioNow - (ctx.outputLatency || 0) - run.t0;
+    },
+    /** Output latency the browser reports (ms), 0 before audio starts or where unsupported. */
+    reportedLatencyMs: () => Math.round((ctx?.outputLatency || 0) * 1000),
     /** Audio-clock seconds since playback started (for the practice timer). */
     elapsed: () => (ctx && run ? Math.max(0, ctx.currentTime - run.t0) : 0),
     get running() {

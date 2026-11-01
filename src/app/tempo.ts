@@ -14,10 +14,10 @@ import { settled } from "./settled";
 import { capabilities } from "../platform/capabilities";
 import { buzz, createWakeLock, setupMediaSession } from "../platform/device";
 import { load, persistStorage, save } from "../platform/persist";
-import { DEFAULT_PREFS, effectiveFeel, hydrate, toSettings, type Prefs, displayBpm } from "../state";
+import { CHECK_SETTINGS, DEFAULT_PREFS, effectiveFeel, hydrate, toSettings, type Prefs, displayBpm } from "../state";
 
 export type Tab = "unit" | "voice" | "presets";
-export type SheetId = "random" | "gap" | "timer" | "countIn" | "preset" | null;
+export type SheetId = "random" | "gap" | "timer" | "countIn" | "preset" | "latency" | null;
 
 export const createTempo = () => {
   const [prefs, setPrefs] = createStore<Prefs>(structuredClone(DEFAULT_PREFS));
@@ -31,6 +31,9 @@ export const createTempo = () => {
   const [sheet, setSheet] = createSignal<SheetId>(null);
   const [editing, setEditing] = createSignal<string | null>(null); // preset id in the preset sheet
   const [toast, setToast] = createSignal<string | null>(null);
+  // The headphone check: its own steady pulse, separate from the metronome's transport.
+  const [checking, setChecking] = createSignal(false);
+  let measuring = false; // no haptics while the user taps along: the taps must follow the sound alone
   let taps: number[] = [];
 
   const settings = createMemo(() => toSettings(prefs, seed()));
@@ -38,6 +41,7 @@ export const createTempo = () => {
   const activePreset = createMemo<Preset | undefined>(() => prefs.presets.find((p) => matches(p, prefs)));
   const shownBpm = () => displayBpm(prefs, playing() ? now() : null);
   const timerLeft = () => prefs.timer.minutes * 60 - elapsed();
+  const timerEnd = () => (prefs.timer.on ? prefs.timer.minutes * 60 : null);
 
   const say = (msg: string) => {
     setToast(msg);
@@ -55,6 +59,7 @@ export const createTempo = () => {
   const engine = createEngine({
     onClick: (c) => {
       setNow(c);
+      if (measuring) return;
       const downbeat = c.beat === 0 && c.sub === 0 && !c.muted;
       if (downbeat && feel().buzz) buzz(c.countIn ? 10 : 20);
       if (downbeat && feel().flash) {
@@ -69,6 +74,7 @@ export const createTempo = () => {
   const start = async () => {
     setSeed((Math.random() * 2 ** 31) | 0);
     setElapsed(0);
+    endCheck();
     engine.setVoice(prefs.voice);
     engine.setLevel(prefs.level / 100);
     engine.setLatencyMs(prefs.latencyMs);
@@ -91,11 +97,33 @@ export const createTempo = () => {
   };
   const toggle = () => (playing() ? stop() : void start());
 
+  /** Play the headphone check (stopping the metronome). Call inside a tap: it may start the audio. */
+  const startCheck = () => {
+    if (playing()) stop();
+    setNow(null);
+    setChecking(true);
+    engine.setEndAt(null);
+    engine.start(CHECK_SETTINGS).catch(() => stopCheck());
+  };
+  /** Leave check mode, handing the engine back to the metronome's settings. */
+  const endCheck = () => {
+    if (!checking()) return;
+    setChecking(false);
+    measuring = false;
+    setNow(null);
+    engine.setLatencyMs(prefs.latencyMs); // drop any preview; the practice-timer end comes back via its effect
+  };
+  const stopCheck = () => {
+    if (!checking()) return;
+    engine.stop();
+    endCheck();
+  };
+
   createEffect(on(settings, (s) => playing() && engine.update(s), { defer: true }));
   createEffect(() => engine.setLevel(prefs.level / 100));
   createEffect(() => engine.setVoice(prefs.voice));
   createEffect(() => engine.setLatencyMs(prefs.latencyMs));
-  createEffect(() => engine.setEndAt(prefs.timer.on ? prefs.timer.minutes * 60 : null));
+  createEffect(() => checking() || engine.setEndAt(timerEnd()));
 
   // ── device integrations ───────────────────────────────────────────────
   const wake = createWakeLock();
@@ -182,6 +210,21 @@ export const createTempo = () => {
     activePreset, applyPreset, savePreset, editPreset, deletePreset,
     toggle, start, stop, tap, setBpm,
     preview: (v: VoiceId) => void engine.preview(v),
+    check: {
+      running: checking,
+      start: startCheck,
+      stop: stopCheck,
+      /** While true, downbeats don't buzz: taps must follow the sound alone. */
+      setMeasuring: (on: boolean) => (measuring = on),
+      /** Try a delay without saving it; null goes back to the saved one. */
+      preview: (ms: number | null) => engine.setLatencyMs(ms ?? prefs.latencyMs),
+      /** A tap's place on the check's timeline (ms), after the latency the browser reports. */
+      tapTime: (timeStamp: number) => {
+        const s = engine.tapTime(timeStamp);
+        return s === null ? null : s * 1000;
+      },
+      reportedMs: () => engine.reportedLatencyMs(),
+    },
     limits: { MIN_BPM, MAX_BPM },
   };
 };

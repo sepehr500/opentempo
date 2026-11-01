@@ -26,6 +26,10 @@ describe("prefs", () => {
     expect([p.bpm, p.feel.buzz, p.feel.stayAwake, p.gap.play]).toEqual([90, false, true, 3]);
   });
 
+  it("hydrate keeps the headphone delay in range", () => {
+    expect([hydrate({ latencyMs: 182.4 }).latencyMs, hydrate({ latencyMs: 900 }).latencyMs, hydrate({ latencyMs: -3 }).latencyMs, hydrate({}).latencyMs]).toEqual([182, 500, 0, 0]);
+  });
+
   it("toSettings only passes features that are on", () => {
     const s = toSettings({ ...DEFAULT_PREFS, gap: { on: true, play: 2, mute: 2 } }, 5);
     expect([s.gap, s.random, s.countInBars, s.seed]).toEqual([{ play: 2, mute: 2 }, null, 0, 5]);
