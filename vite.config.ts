@@ -29,6 +29,8 @@ export default defineConfig({
     }),
   ],
   server: { host: true },
+  // Full licence texts of bundled JS dependencies, served at /third-party-licenses.md (not precached).
+  build: { license: { fileName: "third-party-licenses.md" } },
   worker: { format: "es" },
   test: { environment: "node" },
 });

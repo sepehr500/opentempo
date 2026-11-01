@@ -2,7 +2,21 @@
   "name": "tempo",
   "private": true,
   "version": "0.1.0",
+  "description": "A pocket metronome for the browser: installable, offline, no accounts.",
+  "license": "MIT",
+  "author": "Sepehr Sobhani",
+  "homepage": "https://opentempo.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sepehr500/opentempo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sepehr500/opentempo/issues"
+  },
   "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
