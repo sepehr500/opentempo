@@ -9,10 +9,9 @@ const [installed, setInstalled] = createSignal(
 );
 
 if (typeof window !== "undefined") {
-  window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    setDeferred(e as InstallEvent);
-  });
+  // Keep the event for the header's install button, but don't preventDefault(): that would also
+  // suppress Chrome's own install banner, which is the most visible way people find out.
+  window.addEventListener("beforeinstallprompt", (e) => setDeferred(e as InstallEvent));
   window.addEventListener("appinstalled", () => {
     setInstalled(true);
     setDeferred(null);
