@@ -96,16 +96,25 @@ button {
   gap: 6px;
   color: var(--color-dot-on);
 }
+/* The readout area flexes with the screen (see the unit block); the digits and bpm sit on one line,
+   centred in it, bpm on the digits' baseline. */
 .display-main {
+  flex: 1 1 calc(var(--digits) + 46px);
+  min-height: 80px;
   display: flex;
+  flex-wrap: wrap;
+  align-content: center;
   align-items: flex-end;
   justify-content: space-between;
-  min-height: 148px;
-  padding: 22px 0;
 }
 .dot-matrix {
   max-width: 78%;
   height: auto;
+}
+.display-main .dot-matrix {
+  width: auto;
+  height: var(--digits);
+  max-height: calc(100% - 16px); /* short phones: the digits give a little before the keys do */
 }
 .display-side {
   display: flex;
@@ -156,8 +165,9 @@ button {
 .knobs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  align-content: start;
   column-gap: var(--grid-gap);
-  padding: 22px var(--grid-margin) 0;
+  padding: var(--grid-margin);
 }
 .knob {
   display: flex;
@@ -166,9 +176,15 @@ button {
   gap: 8px;
 }
 .knob-cap {
+  width: min(81.5%, 80px); /* a fixed share of the column: 68px on a 390px-wide phone */
   touch-action: none;
   border-radius: 50%;
   outline-offset: 2px;
+}
+.knob-cap svg {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 .knob-label {
   font-size: 14px;
@@ -189,9 +205,6 @@ button {
   gap: var(--grid-gap);
   padding: 0 var(--grid-margin);
 }
-.fn-row {
-  padding-top: 18px;
-}
 .transport {
   display: flex;
   flex-direction: column;
@@ -199,7 +212,8 @@ button {
   padding-top: var(--grid-gap);
 }
 .play-key {
-  height: 96px;
+  flex: 0 1 96px;
+  min-height: 80px;
   margin: 0 var(--grid-margin);
   padding: 14px 16px;
   font-size: 20px;
@@ -832,11 +846,37 @@ small {
   min-height: 62px;
 }
 
-/* Unit: spare height becomes even breathing room above the knobs and above the keypad; the keypad
-   (function row, transport) stays together and anchored to the bottom, in thumb reach. */
-.screen.unit > .knobs,
-.screen.unit > .fn-row {
-  margin-top: auto;
+/* ── unit: one instrument, two modules ───────
+   Top: the screen and its four encoders, which set what it shows. Bottom: the keypad (function row,
+   sound/tap, play), anchored in thumb reach. Gaps stay on the grid scale (8 inside a module, 16
+   around it) and never stretch. The unit is exactly one viewport tall; what adapts is the screen:
+   a taller phone gets a taller display (2 parts of the spare height) and a wider seam between the
+   modules (1 part, the knobs' padding-bottom). On a short phone the display and the play key give way
+   instead, down to minimums below which the page scrolls rather than overlap. Digits and knobs scale
+   with the width, as the keys do. */
+.screen.unit {
+  height: 100dvh;
+  /* 102px on a 390px-wide phone: a fixed share of the display's inner width */
+  --digits: min(calc((min(100vw, 480px) - 2 * var(--grid-margin) - 36px) * 102 / 322), 120px);
+}
+.screen.unit > .top,
+.screen.unit .display-top,
+.screen.unit .beats {
+  flex-shrink: 0;
+}
+.screen.unit > .display {
+  flex: 2 1 auto;
+  min-height: 170px; /* the fixed rows (90) + the smallest readout area (80) */
+}
+.screen.unit > .knobs {
+  flex: 1 0 auto;
+}
+.screen.unit > .transport {
+  flex: 0 1 auto;
+  min-height: calc(2 * var(--grid-gap) + 56px + 80px);
+}
+.screen.unit > section:last-of-type {
+  margin-bottom: var(--grid-margin);
 }
 .screen.unit > .tabs {
   margin-top: 0;
