@@ -150,3 +150,18 @@ export const Share = () => (
     <circle cx="13.5" cy="14.2" r="2.3" fill="currentColor" />
   </S>
 );
+
+/** Time signature: a bar of beat lines, the first cut in pieces. */
+export const Lines = () => (
+  <S>
+    <rect x="1.5" y="7.5" width="3" height="3" rx="1" fill="currentColor" />
+    <rect x="5.5" y="7.5" width="3" height="3" rx="1" fill="currentColor" />
+    <rect x="10" y="7.5" width="7" height="3" rx="1.2" fill="currentColor" />
+  </S>
+);
+
+export const Chevron = () => (
+  <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true">
+    <path d="M1.5 3l2.5 2.5L6.5 3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+  </svg>
+);

@@ -17,3 +17,35 @@ export const fromSignature = (id: string): { beatsPerBar: number; subdivision: 1
   if (m[2] === "8" && n % 3 === 0 && n / 3 <= 12) return { beatsPerBar: n / 3, subdivision: 3 };
   return { beatsPerBar: Math.min(12, n), subdivision: 1 };
 };
+
+// ── quick picks ─────────────────────────────────────────────────────────────────────────────
+// A time signature is a shortcut that sets beats and split. /8 signatures are felt in big beats
+// of three (6/8 = 2 beats, split 3), so the tempo counts the felt beat and the label never
+// contradicts it.
+
+export type Signature = { readonly id: string; readonly beats: number; readonly compound: boolean; readonly hint: string };
+
+export const SIGNATURES: readonly Signature[] = [
+  { id: "2/4", beats: 2, compound: false, hint: "march" },
+  { id: "3/4", beats: 3, compound: false, hint: "waltz" },
+  { id: "4/4", beats: 4, compound: false, hint: "most songs" },
+  { id: "5/4", beats: 5, compound: false, hint: "odd five" },
+  { id: "6/8", beats: 2, compound: true, hint: "felt in two" },
+  { id: "9/8", beats: 3, compound: true, hint: "felt in three" },
+  { id: "12/8", beats: 4, compound: true, hint: "shuffle" },
+  { id: "7/4", beats: 7, compound: false, hint: "odd seven" },
+];
+
+/** Beats and split after picking a signature. /4 keeps an even split (eighths, sixteenths); /8 splits in three. */
+export const applySignature = (sig: Signature, split: number): { beatsPerBar: number; subdivision: 1 | 2 | 3 | 4 } => ({
+  beatsPerBar: sig.beats,
+  subdivision: sig.compound ? 3 : split === 3 ? 1 : (split as 1 | 2 | 4),
+});
+
+/** The signature the current beats and split amount to, or null ("custom"). */
+export const signatureOf = (beats: number, split: number): Signature | null =>
+  SIGNATURES.find((s) => s.beats === beats && (s.compound ? split === 3 : split !== 3)) ?? null;
+
+/** How you'd count it out loud, one word per click: 1 & 2 &, 1 & a 2 & a, 1 e & a. */
+export const countWords = (beats: number, split: number): string[] =>
+  Array.from({ length: beats }, (_, i) => [String(i + 1), ...({ 1: [], 2: ["&"], 3: ["&", "a"], 4: ["e", "&", "a"] } as Record<number, string[]>)[split]]).flat();

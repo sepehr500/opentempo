@@ -90,6 +90,24 @@ button {
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
+/* the time signature, as a dropdown that opens its sheet */
+.display-meter {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: -8px -10px; /* a bigger tap area than the text */
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--color-display-text);
+}
+.display-meter:active {
+  background: var(--color-slate);
+}
+.display-meter:focus-visible {
+  outline: 1px solid var(--color-dot-on);
+}
 .display-bar {
   display: flex;
   margin-left: auto; /* the Unit display has nothing on the left of the top row */
@@ -434,6 +452,68 @@ small {
 }
 .choice.halves {
   grid-template-columns: repeat(2, 1fr);
+}
+.choice.quarters {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* ── time signature sheet ────── */
+.meter-choice .choice-key {
+  height: 84px;
+  padding: 10px;
+  align-items: stretch;
+}
+.meter-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  gap: 6px;
+}
+.meter-id {
+  font: 700 20px/1 var(--font-ui);
+}
+.meter-hint {
+  font: 11px/14px var(--font-ui);
+  font-weight: 400;
+  color: var(--color-muted);
+}
+.choice-key.accent .meter-hint {
+  color: var(--color-accent-ink);
+}
+/* the display's lines in miniature */
+.mini-lines {
+  display: flex;
+  gap: 3px;
+}
+.mini-line {
+  flex: 1;
+  display: flex;
+  gap: 1px;
+}
+.mini-line > span {
+  flex: 1;
+  height: 4px;
+  border-radius: 1px;
+  background: currentColor;
+}
+/* how you'd count it out loud; the word being clicked lights up */
+.count-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 14px 16px;
+  border-radius: var(--radius-panel);
+  background: var(--color-display);
+  color: var(--color-display-muted);
+  font: 16px/22px var(--font-mono);
+}
+.count-words .count-beat {
+  color: var(--color-display-text);
+  font-weight: 700;
+}
+.count-words .on {
+  color: var(--color-dot-on);
 }
 .choice-key {
   height: 52px;

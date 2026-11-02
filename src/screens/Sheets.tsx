@@ -6,6 +6,7 @@ import { LatencySheet } from "./Latency";
 import { capabilities } from "../platform/capabilities";
 import { formatClock } from "../state";
 import { Choice, RangeRuler, Sheet, SheetHeader, Stepper } from "../ui/controls";
+import { SIGNATURES, applySignature, countWords, signatureOf } from "../core/signature";
 import * as Icon from "../ui/icons";
 
 const RandomSheet = () => {
@@ -102,6 +103,60 @@ const CountInSheet = () => {
   );
 };
 
+/** A bar drawn like the display: one line per beat, cut into its clicks. */
+const MiniLines = (p: { beats: number; split: number }) => (
+  <span class="mini-lines" aria-hidden="true">
+    <For each={Array.from({ length: p.beats }, (_, i) => i)}>
+      {() => (
+        <span class="mini-line">
+          <For each={Array.from({ length: p.split }, (_, j) => j)}>{() => <span />}</For>
+        </span>
+      )}
+    </For>
+  </span>
+);
+
+const MeterSheet = () => {
+  const t = useTempo();
+  const p = t.prefs;
+  const current = () => signatureOf(p.beatsPerBar, p.subdivision)?.id ?? "";
+  const words = () => countWords(p.beatsPerBar, p.subdivision);
+  const lit = () => {
+    const c = t.now();
+    return t.playing() && c && !c.muted ? c.beat * p.subdivision + (c.countIn ? 0 : c.sub) : -1;
+  };
+  return (
+    <>
+      <SheetHeader icon={<Icon.Lines />} title="time signature" />
+      <Choice
+        class="quarters meter-choice"
+        label="time signature"
+        options={SIGNATURES.map((s) => s.id)}
+        value={current()}
+        onChange={(id) => {
+          const a = applySignature(SIGNATURES.find((s) => s.id === id)!, p.subdivision);
+          t.setPrefs("beatsPerBar", a.beatsPerBar);
+          t.setPrefs("subdivision", a.subdivision);
+        }}
+        render={(id) => {
+          const s = SIGNATURES.find((x) => x.id === id)!;
+          const a = applySignature(s, s.compound ? 3 : 1);
+          return (
+            <span class="meter-tile">
+              <span class="meter-id">{s.id}</span>
+              <MiniLines beats={a.beatsPerBar} split={a.subdivision} />
+              <span class="meter-hint">{s.hint}</span>
+            </span>
+          );
+        }}
+      />
+      <div class="count-words" aria-label={`count: ${words().join(" ")}`}>
+        <For each={words()}>{(w, i) => <span classList={{ "count-beat": /\d/.test(w), on: i() === lit() }}>{w}</span>}</For>
+      </div>
+    </>
+  );
+};
+
 const PresetSheet = () => {
   const t = useTempo();
   const preset = () => t.prefs.presets.find((p) => p.id === t.editing());
@@ -146,7 +201,7 @@ const PresetSheet = () => {
   );
 };
 
-const TITLES: Record<string, string> = { random: "random tempo", gap: "gap trainer", timer: "practice timer", countIn: "count-in", preset: "preset", latency: "headphone delay" };
+const TITLES: Record<string, string> = { random: "random tempo", gap: "gap trainer", timer: "practice timer", countIn: "count-in", preset: "preset", latency: "headphone delay", meter: "time signature" };
 
 export const Sheets = () => {
   const t = useTempo();
@@ -159,6 +214,7 @@ export const Sheets = () => {
         <Match when={t.sheet() === "countIn"}><CountInSheet /></Match>
         <Match when={t.sheet() === "preset"}><PresetSheet /></Match>
         <Match when={t.sheet() === "latency"}><LatencySheet /></Match>
+        <Match when={t.sheet() === "meter"}><MeterSheet /></Match>
       </Switch>
     </Sheet>
   );

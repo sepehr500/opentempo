@@ -18,7 +18,7 @@ import { load, persistStorage, save } from "../platform/persist";
 import { CHECK_SETTINGS, DEFAULT_PREFS, effectiveFeel, hydrate, toSettings, type Prefs, displayBpm } from "../state";
 
 export type Tab = "unit" | "voice" | "presets";
-export type SheetId = "random" | "gap" | "timer" | "countIn" | "preset" | "latency" | null;
+export type SheetId = "random" | "gap" | "timer" | "countIn" | "preset" | "latency" | "meter" | null;
 
 export const createTempo = () => {
   const [prefs, setPrefs] = createStore<Prefs>(structuredClone(DEFAULT_PREFS));

@@ -3,6 +3,7 @@ import { VOICES, type VoiceId } from "../audio/voices";
 import { useTempo } from "../app/tempo";
 import { markingOf } from "../core/italian";
 import type { Subdivision } from "../core/types";
+import { signatureOf } from "../core/signature";
 import { formatClock, splitLabel } from "../state";
 import { DotMatrix } from "../ui/DotMatrix";
 import * as Icon from "../ui/icons";
@@ -26,6 +27,10 @@ export const Display = () => {
   return (
     <section class="display" classList={{ flash: t.flash() }}>
       <div class="display-top">
+        <button class="display-meter" aria-haspopup="dialog" aria-label="time signature" onClick={() => t.setSheet("meter")}>
+          {signatureOf(t.prefs.beatsPerBar, t.prefs.subdivision)?.id ?? "custom"}
+          <Icon.Chevron />
+        </button>
         <Show when={t.playing() && t.now()}>
           {(c) => (
             <span class="display-bar">
