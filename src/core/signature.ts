@@ -1,11 +1,10 @@
-// The time signature is a readout, not a setting: beats (lines) × split (pieces per line).
-// A split of 3 is compound time, so 2 × 3 reads 6/8 and the tempo counts the dotted quarter.
+// tempo has no time signatures: the tempo counts beats (the lines on the display) and split adds
+// clicks inside each one. A signature would also claim which note is the beat, which is exactly
+// what the tempo number decides, so the two would contradict each other (1 × 3 "3/8" at 120).
 
-/** "4/4", or "6/8" when each beat splits in three. */
-export const timeSignature = (beats: number, split: number): string => (split === 3 ? `${beats * 3}/8` : `${beats}/4`);
-
-/** Split as a word for preset rows; a split of 3 already shows as /8. */
-export const splitWord = (split: number): string => ({ 2: "8ths", 4: "16ths" } as Record<number, string>)[split] ?? "";
+/** How a setting reads in a preset row: "4 beats", "2 beats · split 3". */
+export const shapeLabel = (beats: number, split: number): string =>
+  [`${beats} ${beats === 1 ? "beat" : "beats"}`, split > 1 ? `split ${split}` : ""].filter(Boolean).join(" · ");
 
 /**
  * For one release prefs stored a time signature ("6/8", "7/8 2+2+3"). Back to beats × split:

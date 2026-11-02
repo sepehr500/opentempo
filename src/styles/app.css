@@ -92,6 +92,7 @@ button {
 }
 .display-bar {
   display: flex;
+  margin-left: auto; /* the Unit display has nothing on the left of the top row */
   align-items: center;
   gap: 6px;
   color: var(--color-dot-on);

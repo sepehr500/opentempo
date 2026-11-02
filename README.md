@@ -11,7 +11,7 @@ A pocket metronome for the browser. Installable, works offline, no accounts.
 
 ## Features
 
-- 20–300 bpm, 1–12 beats per bar, each beat split into 1–4 (a split of 3 reads as 6/8, 9/8, 12/8), accented downbeat
+- 20–300 bpm counting beats; 1–12 beats per bar, each split into 1–4 clicks (2 beats split 3 is 6/8 felt in two), accented downbeat
 - Tap tempo, plus the Italian tempo marking for whatever you land on
 - **random**: a new tempo within a range every N bars
 - **gap**: play N bars, mute M bars, to check your inner clock

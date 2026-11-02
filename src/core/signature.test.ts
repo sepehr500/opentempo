@@ -1,17 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { hydrate } from "../state";
-import { fromSignature, splitWord, timeSignature } from "./signature";
+import { fromSignature, shapeLabel } from "./signature";
 
-describe("time signature readout", () => {
-  it("is beats over 4, or eighths over 8 when each beat splits in three", () => {
-    expect(timeSignature(4, 1)).toBe("4/4");
-    expect(timeSignature(4, 2)).toBe("4/4");
-    expect(timeSignature(2, 3)).toBe("6/8");
-    expect(timeSignature(3, 3)).toBe("9/8");
-    expect(timeSignature(4, 3)).toBe("12/8");
-    expect(timeSignature(1, 3)).toBe("3/8");
-    expect(splitWord(3)).toBe("");
-    expect(splitWord(4)).toBe("16ths");
+describe("beats and split", () => {
+  it("reads as beats and split, never as a time signature", () => {
+    expect(shapeLabel(4, 1)).toBe("4 beats");
+    expect(shapeLabel(1, 3)).toBe("1 beat · split 3");
+    expect(shapeLabel(2, 3)).toBe("2 beats · split 3");
   });
 
   it("converts the short-lived stored time signatures", () => {

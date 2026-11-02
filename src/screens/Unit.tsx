@@ -3,7 +3,6 @@ import { VOICES, type VoiceId } from "../audio/voices";
 import { useTempo } from "../app/tempo";
 import { markingOf } from "../core/italian";
 import type { Subdivision } from "../core/types";
-import { timeSignature } from "../core/signature";
 import { formatClock, splitLabel } from "../state";
 import { DotMatrix } from "../ui/DotMatrix";
 import * as Icon from "../ui/icons";
@@ -27,7 +26,6 @@ export const Display = () => {
   return (
     <section class="display" classList={{ flash: t.flash() }}>
       <div class="display-top">
-        <span>{timeSignature(t.prefs.beatsPerBar, t.prefs.subdivision)}</span>
         <Show when={t.playing() && t.now()}>
           {(c) => (
             <span class="display-bar">

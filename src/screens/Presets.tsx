@@ -1,7 +1,7 @@
 import { For, Show } from "solid-js";
 import { useTempo } from "../app/tempo";
 import type { Preset } from "../core/presets";
-import { splitWord, timeSignature } from "../core/signature";
+import { shapeLabel } from "../core/signature";
 import { DotMatrix } from "../ui/DotMatrix";
 import * as Icon from "../ui/icons";
 
@@ -12,9 +12,8 @@ const Meter = (p: { beats: number }) => (
   </span>
 );
 
-/** "4/4 · wood", "4/4 · 16ths · wood", "6/8 · wood". */
-export const meta = (p: { beatsPerBar: number; subdivision: number; voice: string }) =>
-  [timeSignature(p.beatsPerBar, p.subdivision), splitWord(p.subdivision), p.voice].filter(Boolean).join(" · ");
+/** "4 beats · wood", "2 beats · split 3 · wood". */
+export const meta = (p: { beatsPerBar: number; subdivision: number; voice: string }) => [shapeLabel(p.beatsPerBar, p.subdivision), p.voice].join(" · ");
 
 export const Presets = () => {
   const t = useTempo();
