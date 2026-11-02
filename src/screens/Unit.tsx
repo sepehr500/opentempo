@@ -85,7 +85,7 @@ export const Unit = () => {
     <>
       <Display />
       <section class="knobs">
-        <Knob label="tempo" color="blue" value={p.bpm} min={t.limits.MIN_BPM} max={t.limits.MAX_BPM} sensitivity={3} onChange={t.setBpm} display={t.shownBpm()} />
+        <Knob label="tempo" color="blue" value={p.bpm} min={t.limits.MIN_BPM} max={t.limits.MAX_BPM} sensitivity={3} accelerate onChange={t.setBpm} display={t.shownBpm()} />
         <Knob label="beats" color="green" value={p.beatsPerBar} min={1} max={12} sensitivity={14} onChange={(v) => t.setPrefs("beatsPerBar", v)} />
         <Knob label="split" color="cream" value={p.subdivision} min={1} max={4} sensitivity={20} onChange={(v) => t.setPrefs("subdivision", v as Subdivision)} display={splitLabel(p.subdivision)} />
         <Knob label="level" color="accent" value={p.level} min={0} max={100} step={5} sensitivity={4} onChange={(v) => t.setPrefs("level", v)} />

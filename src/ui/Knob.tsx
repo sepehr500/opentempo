@@ -1,6 +1,7 @@
 import type { JSX } from "solid-js";
 import { buzz } from "../platform/device";
 import { detentDue } from "../state";
+import { gainFor, releaseValue, smoothSpeed, type Sample } from "./knobDrag";
 
 export type KnobProps = {
   label: string;
@@ -10,6 +11,8 @@ export type KnobProps = {
   step?: number;
   /** Pixels of vertical drag per step. */
   sensitivity?: number;
+  /** Slow drags move less per pixel, fast ones more (for wide ranges like tempo). */
+  accelerate?: boolean;
   display?: JSX.Element;
   color: "blue" | "green" | "cream" | "accent";
   onChange: (v: number) => void;
@@ -23,8 +26,11 @@ export const angleOf = (v: number, min: number, max: number) =>
 
 export const Knob = (props: KnobProps) => {
   const step = () => props.step ?? 1;
-  let startY = 0;
-  let startV = 0;
+  let lastY = 0;
+  let lastT = 0;
+  let speed = 0;
+  let acc = 0; // unrounded value, so slow moves add up instead of rounding away
+  let samples: Sample[] = [];
   let lastDetent = 0;
 
   const set = (v: number) => {
@@ -41,12 +47,29 @@ export const Knob = (props: KnobProps) => {
 
   const down = (e: PointerEvent) => {
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
-    startY = e.clientY;
-    startV = props.value;
+    lastY = e.clientY;
+    lastT = e.timeStamp;
+    speed = 0;
+    acc = props.value;
+    samples = [{ t: e.timeStamp, y: e.clientY, v: props.value }];
   };
   const move = (e: PointerEvent) => {
     if (!(e.currentTarget as Element).hasPointerCapture(e.pointerId)) return;
-    set(startV + ((startY - e.clientY) / (props.sensitivity ?? 6)) * step());
+    const dy = lastY - e.clientY;
+    speed = smoothSpeed(speed, dy, e.timeStamp - lastT);
+    const gain = props.accelerate ? gainFor(speed) : 1;
+    acc = Math.min(props.max, Math.max(props.min, acc + (dy / (props.sensitivity ?? 6)) * step() * gain));
+    lastY = e.clientY;
+    lastT = e.timeStamp;
+    set(acc);
+    samples.push({ t: e.timeStamp, y: e.clientY, v: props.value });
+    if (samples.length > 32) samples.shift();
+  };
+  // Letting go: drop the few pixels a fingertip shifts as it lifts.
+  const up = (e: PointerEvent) => {
+    const v = releaseValue(samples, e.timeStamp, e.clientY);
+    samples = [];
+    if (v !== null && v !== props.value) props.onChange(v);
   };
   const key = (e: KeyboardEvent) => {
     const d = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 }[e.key];
@@ -71,6 +94,8 @@ export const Knob = (props: KnobProps) => {
         aria-valuenow={props.value}
         onPointerDown={down}
         onPointerMove={move}
+        onPointerUp={up}
+        onPointerCancel={() => (samples = [])}
         onKeyDown={key}
         onWheel={(e) => {
           e.preventDefault();
