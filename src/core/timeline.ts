@@ -8,14 +8,45 @@ export const MAX_BPM = 300;
 export const clampBpm = (bpm: number): number =>
   Math.min(MAX_BPM, Math.max(MIN_BPM, Math.round(bpm)));
 
-export const barDuration = (bpm: number, beatsPerBar: number): number =>
-  (60 / bpm) * beatsPerBar;
-
-/** Tempo of a musical bar (index >= 0), honouring random-tempo blocks. */
+/** Target tempo of a musical bar (index >= 0): the tempo random picked for its block, once the glide is over. */
 export const bpmOfBar = (s: Settings, index: number): number =>
   s.random && index >= 0
     ? clampBpm(intBetween(s.seed, Math.floor(index / Math.max(1, s.random.everyBars)), s.random.min, s.random.max))
     : clampBpm(s.bpm);
+
+/**
+ * Random tempo glides instead of jumping: each new pick is reached beat by beat over the first
+ * bar of its block (at least 4 beats, never longer than the block), then held. The first glide
+ * starts from the set tempo. With a new pick every bar, the tempo is always gliding.
+ */
+export const glideBeats = (beatsPerBar: number, everyBars: number): number =>
+  Math.min(Math.max(1, everyBars) * beatsPerBar, Math.max(beatsPerBar, 4));
+
+/** Tempo of one beat (fractional while gliding). Count-in and plain playback: the set tempo. */
+export const beatBpm = (s: Settings, bar: number, beat: number): number => {
+  if (!s.random || bar < 0) return clampBpm(s.bpm);
+  const every = Math.max(1, s.random.everyBars);
+  const block = Math.floor(bar / every);
+  const to = bpmOfBar(s, bar);
+  const from = block === 0 ? clampBpm(s.bpm) : bpmOfBar(s, (block - 1) * every);
+  const pos = (bar - block * every) * s.beatsPerBar + beat;
+  return from + (to - from) * Math.min(1, (pos + 1) / glideBeats(s.beatsPerBar, every));
+};
+
+/** Seconds each beat of a bar lasts. */
+export const beatLengths = (s: Settings, bar: number): number[] =>
+  Array.from({ length: s.beatsPerBar }, (_, j) => 60 / beatBpm(s, bar, j));
+
+const sum = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0);
+
+/** Seconds a bar lasts. */
+export const barDuration = (s: Settings, bar: number): number => sum(beatLengths(s, bar));
+
+/** Seconds from the start of a bar to a position in beats (beat + fraction). */
+const offsetOf = (lens: readonly number[], phase: number): number => {
+  const whole = Math.min(lens.length, Math.floor(phase + 1e-9));
+  return sum(lens.slice(0, whole)) + (whole < lens.length ? (phase - whole) * lens[whole] : 0);
+};
 
 /** Whether a musical bar (index >= 0) falls in the silent part of the gap cycle. */
 export const isMutedBar = (s: Settings, index: number): boolean => {
@@ -46,7 +77,7 @@ export function* bars(s: Settings, from: Cursor = origin(s)): Generator<Bar> {
   for (;;) {
     const bar = makeBar(s, index, start);
     yield bar;
-    start += barDuration(bar.bpm, s.beatsPerBar);
+    start += barDuration(s, bar.index);
     index += 1;
   }
 }
@@ -56,14 +87,14 @@ const kindOf = (s: Settings, beat: number, sub: number): ClickKind =>
 
 /** Every click in a bar, in time order. Count-in bars click quarter notes only. */
 export const clicksOfBar = (s: Settings, bar: Bar): Click[] => {
-  const beatLen = 60 / bar.bpm;
+  const lens = beatLengths(s, bar.index);
   const subs = bar.countIn ? 1 : s.subdivision;
   return Array.from({ length: s.beatsPerBar * subs }, (_, i) => {
     const beat = Math.floor(i / subs);
     const sub = i % subs;
     const phase = beat + sub / subs;
     return {
-      time: bar.start + phase * beatLen,
+      time: bar.start + offsetOf(lens, phase),
       bar: bar.index,
       beat,
       sub,
@@ -71,7 +102,7 @@ export const clicksOfBar = (s: Settings, bar: Bar): Click[] => {
       kind: kindOf(s, beat, sub),
       countIn: bar.countIn,
       muted: bar.muted,
-      bpm: bar.bpm,
+      bpm: Math.round(60 / lens[beat]), // the tempo heard on this beat, gliding included
     };
   });
 };
@@ -84,7 +115,7 @@ export function* clicks(s: Settings, from: Cursor = origin(s)): Generator<Click>
 /** Cursor for the bar that follows `bar` (used to re-plan when settings change mid-play). */
 export const nextCursor = (s: Settings, bar: Bar): Cursor => ({
   index: bar.index + 1,
-  start: bar.start + barDuration(bar.bpm, s.beatsPerBar),
+  start: bar.start + barDuration(s, bar.index),
 });
 
 /**
@@ -94,8 +125,7 @@ export const nextCursor = (s: Settings, bar: Bar): Cursor => ({
  */
 export const resumeCursor = (s: Settings, due: Click): Cursor => {
   if (due.phase >= s.beatsPerBar) return { index: due.bar + 1, start: due.time };
-  const bpm = due.bar < 0 ? clampBpm(s.bpm) : bpmOfBar(s, due.bar);
-  return { index: due.bar, start: due.time - (due.phase * 60) / bpm };
+  return { index: due.bar, start: due.time - offsetOf(beatLengths(s, due.bar), due.phase) };
 };
 
 /** Clicks from a resume cursor, skipping any that fall before the due time. */

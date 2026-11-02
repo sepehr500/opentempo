@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bars, bpmOfBar, clicks, clicksUntil, isMutedBar, nextCursor, origin, resumeClicks } from "./timeline";
+import { barDuration, bars, beatBpm, bpmOfBar, clicks, glideBeats, clicksUntil, isMutedBar, nextCursor, origin, resumeClicks } from "./timeline";
 import type { Settings } from "./types";
 
 const base: Settings = {
@@ -114,9 +114,58 @@ describe("random tempo", () => {
     expect(new Set(run(7)).size).toBeGreaterThan(1);
   });
 
-  it("lengthens bars when the tempo drops", () => {
+  it("bars last as long as their beats", () => {
     const [b0, b1] = take(bars(s), 2);
-    expect(b1.start).toBeCloseTo((60 / b0.bpm) * 4);
+    expect(b1.start - b0.start).toBeCloseTo(barDuration(s, 0));
+  });
+
+  it("glides to each new tempo over the first bar of its block, then holds it", () => {
+    const g = { ...base, bpm: 100, random: { min: 60, max: 200, everyBars: 4 } };
+    const target = (bar: number) => bpmOfBar(g, bar);
+    // block 0 glides from the set tempo, a quarter of the way per beat
+    expect([0, 1, 2, 3].map((j) => beatBpm(g, 0, j))).toEqual([1, 2, 3, 4].map((k) => 100 + ((target(0) - 100) * k) / 4));
+    // then holds for the rest of the block
+    expect([1, 2, 3].flatMap((b) => [0, 1, 2, 3].map((j) => beatBpm(g, b, j)))).toEqual(Array(12).fill(target(0)));
+    // block 1 glides from block 0's tempo
+    expect(beatBpm(g, 4, 0)).toBeCloseTo(target(0) + (target(4) - target(0)) / 4);
+    expect(beatBpm(g, 4, 3)).toBe(target(4));
+  });
+
+  it("with a new tempo every bar, it is always gliding", () => {
+    const g = { ...base, bpm: 100, random: { min: 60, max: 200, everyBars: 1 } };
+    for (let b = 1; b < 30; b++) {
+      const from = bpmOfBar(g, b - 1), to = bpmOfBar(g, b);
+      expect(beatBpm(g, b, 0)).toBeCloseTo(from + (to - from) / 4);
+      expect(beatBpm(g, b, 3)).toBe(to);
+    }
+  });
+
+  it("glide length: a bar, at least 4 beats, never longer than the block", () => {
+    expect(glideBeats(4, 4)).toBe(4);
+    expect(glideBeats(3, 4)).toBe(4);
+    expect(glideBeats(2, 1)).toBe(2);
+    expect(glideBeats(7, 2)).toBe(7);
+    expect(glideBeats(1, 8)).toBe(4);
+  });
+
+  it("click times follow the glide, and each click reports the tempo heard", () => {
+    const g = { ...base, bpm: 100, subdivision: 2 as const, random: { min: 60, max: 200, everyBars: 2 } };
+    const c = clicksUntil(g, 30);
+    for (let i = 1; i < c.length; i++) {
+      const prev = c[i - 1];
+      const len = 60 / beatBpm(g, prev.bar, prev.beat);
+      expect(c[i].time - prev.time).toBeCloseTo(len / 2, 9);
+      expect(prev.bpm).toBe(Math.round(60 / len));
+    }
+  });
+
+  it("re-planning mid-glide keeps the next click's time", () => {
+    const g = { ...base, bpm: 100, random: { min: 60, max: 200, everyBars: 2 } };
+    const due = clicksUntil(g, 20).find((c) => c.bar === 4 && c.beat === 2)!;
+    const [next] = take(resumeClicks({ ...g, subdivision: 2 }, due), 1);
+    expect(next.time).toBeCloseTo(due.time, 9);
+    expect(next.bar).toBe(4);
+    expect(next.beat).toBe(2);
   });
 });
 
