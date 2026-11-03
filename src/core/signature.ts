@@ -36,10 +36,10 @@ export const SIGNATURES: readonly Signature[] = [
   { id: "7/4", beats: 7, compound: false, hint: "odd seven" },
 ];
 
-/** Beats and split after picking a signature. /4 keeps an even split (eighths, sixteenths); /8 splits in three. */
-export const applySignature = (sig: Signature, split: number): { beatsPerBar: number; subdivision: 1 | 2 | 3 | 4 } => ({
+/** Beats and split after picking a signature: exactly what its tile shows (/4 unsplit, /8 in threes). */
+export const applySignature = (sig: Signature): { beatsPerBar: number; subdivision: 1 | 3 } => ({
   beatsPerBar: sig.beats,
-  subdivision: sig.compound ? 3 : split === 3 ? 1 : (split as 1 | 2 | 4),
+  subdivision: sig.compound ? 3 : 1,
 });
 
 /** The signature the current beats and split amount to, or null ("custom"). */

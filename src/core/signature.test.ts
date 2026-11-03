@@ -30,16 +30,15 @@ describe("beats and split", () => {
 describe("time signature quick picks", () => {
   const sig = (id: string) => SIGNATURES.find((s) => s.id === id)!;
 
-  it("set beats and split", () => {
-    expect(applySignature(sig("6/8"), 1)).toEqual({ beatsPerBar: 2, subdivision: 3 });
-    expect(applySignature(sig("12/8"), 2)).toEqual({ beatsPerBar: 4, subdivision: 3 });
-    expect(applySignature(sig("3/4"), 2)).toEqual({ beatsPerBar: 3, subdivision: 2 }); // keeps eighths
-    expect(applySignature(sig("4/4"), 3)).toEqual({ beatsPerBar: 4, subdivision: 1 }); // leaves 12/8's three
+  it("set exactly what the tile shows, whatever the split was", () => {
+    expect(applySignature(sig("6/8"))).toEqual({ beatsPerBar: 2, subdivision: 3 });
+    expect(applySignature(sig("12/8"))).toEqual({ beatsPerBar: 4, subdivision: 3 });
+    expect(applySignature(sig("3/4"))).toEqual({ beatsPerBar: 3, subdivision: 1 });
   });
 
   it("every pick reads back as itself, and other settings read as custom", () => {
-    for (const s of SIGNATURES) for (const split of [1, 2, 3, 4]) {
-      const a = applySignature(s, split);
+    for (const s of SIGNATURES) {
+      const a = applySignature(s);
       expect(signatureOf(a.beatsPerBar, a.subdivision)?.id).toBe(s.id);
     }
     expect(signatureOf(4, 2)?.id).toBe("4/4");

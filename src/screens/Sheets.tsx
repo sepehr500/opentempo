@@ -134,13 +134,13 @@ const MeterSheet = () => {
         options={SIGNATURES.map((s) => s.id)}
         value={current()}
         onChange={(id) => {
-          const a = applySignature(SIGNATURES.find((s) => s.id === id)!, p.subdivision);
+          const a = applySignature(SIGNATURES.find((s) => s.id === id)!);
           t.setPrefs("beatsPerBar", a.beatsPerBar);
           t.setPrefs("subdivision", a.subdivision);
         }}
         render={(id) => {
           const s = SIGNATURES.find((x) => x.id === id)!;
-          const a = applySignature(s, s.compound ? 3 : 1);
+          const a = applySignature(s);
           return (
             <span class="meter-tile">
               <span class="meter-id">{s.id}</span>
