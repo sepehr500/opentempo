@@ -14,6 +14,7 @@ import { settled } from "./settled";
 import { capabilities } from "../platform/capabilities";
 import { buzz, createWakeLock, setupMediaSession } from "../platform/device";
 import { onLaunchTab } from "../platform/launch";
+import { watchForUpdates } from "../platform/update";
 import { load, persistStorage, save } from "../platform/persist";
 import { CHECK_SETTINGS, DEFAULT_PREFS, effectiveFeel, hydrate, toSettings, type Prefs, displayBpm } from "../state";
 
@@ -30,6 +31,10 @@ export const createTempo = () => {
   const [flash, setFlash] = createSignal(false);
   const [tab, setTab] = createSignal<Tab>("unit");
   onLaunchTab(setTab); // home-screen shortcuts: /?tab=voice, /?tab=presets
+  // A new build reloads the app as soon as it's ready - or right after stop, if it's playing.
+  let afterStop: (() => void) | null = null;
+  watchForUpdates({ playing: () => untrack(playing), onReadyWhileStopped: (r) => (afterStop = r) });
+  createEffect(() => !playing() && afterStop?.());
   const [sheet, setSheet] = createSignal<SheetId>(null);
   const [editing, setEditing] = createSignal<string | null>(null); // preset id in the preset sheet
   const [toast, setToast] = createSignal<string | null>(null);
