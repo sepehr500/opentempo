@@ -14,7 +14,7 @@ const Meter = (p: { beats: number }) => (
 
 /** "4 beats · wood", "2 beats · split 3 · wood". */
 export const meta = (p: { beatsPerBar: number; subdivision: number; accent: boolean; voice: string }) =>
-  [shapeLabel(p.beatsPerBar, p.subdivision), p.accent ? "" : "no accent", p.voice].filter(Boolean).join(" · ");
+  [shapeLabel(p.beatsPerBar, p.subdivision), p.accent ? "" : "no accents", p.voice].filter(Boolean).join(" · ");
 
 export const Presets = () => {
   const t = useTempo();
