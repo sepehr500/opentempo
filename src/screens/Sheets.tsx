@@ -151,8 +151,8 @@ const MeterSheet = () => {
         }}
       />
       <div class="row">
-        <span>accent the one</span>
-        <Toggle label="accent the one" on={p.accent} onChange={(v) => t.setPrefs("accent", v)} />
+        <span>accents</span>
+        <Toggle label="accents" on={p.accent} onChange={(v) => t.setPrefs("accent", v)} />
       </div>
       <div class="count-words" aria-label={`count: ${words().join(" ")}`}>
         <For each={words()}>{(w, i) => <span classList={{ "count-beat": /\d/.test(w), one: i() === 0 && p.accent, on: i() === lit() }}>{w}</span>}</For>

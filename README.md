@@ -11,7 +11,7 @@ A pocket metronome for the browser. Installable, works offline, no accounts.
 
 ## Features
 
-- 20–300 bpm counting beats; 1–12 beats per bar, each split into 1–4 clicks; the accent on beat 1 can be turned off (every beat the same, for irregular meter). Time signature quick picks (2/4 to 7/4, 6/8, 9/8, 12/8) set beats and split and show the count out loud ("1 & a 2 & a")
+- 20–300 bpm counting beats; 1–12 beats per bar, each split into 1–4 clicks; accents can be turned off (every click the same, for irregular meter). Time signature quick picks (2/4 to 7/4, 6/8, 9/8, 12/8) set beats and split and show the count out loud ("1 & a 2 & a")
 - Tap tempo, plus the Italian tempo marking for whatever you land on
 - **random**: a new tempo within a range every N bars
 - **gap**: play N bars, mute M bars, to check your inner clock

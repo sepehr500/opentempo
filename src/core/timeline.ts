@@ -82,8 +82,9 @@ export function* bars(s: Settings, from: Cursor = origin(s)): Generator<Bar> {
   }
 }
 
+/** Accents off: every click is the same (no stronger one, no softer splits). */
 const kindOf = (s: Settings, beat: number, sub: number): ClickKind =>
-  sub > 0 ? "sub" : beat === 0 && s.accentFirst ? "accent" : "beat";
+  !s.accents ? "beat" : sub > 0 ? "sub" : beat === 0 ? "accent" : "beat";
 
 /** Every click in a bar, in time order. Count-in bars click quarter notes only. */
 export const clicksOfBar = (s: Settings, bar: Bar): Click[] => {

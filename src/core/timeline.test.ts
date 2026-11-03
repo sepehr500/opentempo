@@ -6,7 +6,7 @@ const base: Settings = {
   bpm: 120,
   beatsPerBar: 4,
   subdivision: 1,
-  accentFirst: true,
+  accents: true,
   countInBars: 0,
   random: null,
   gap: null,
@@ -33,7 +33,7 @@ describe("timing", () => {
   });
 
   it("can disable the accent", () => {
-    expect(clicksUntil({ ...base, accentFirst: false }, 2).every((c) => c.kind === "beat")).toBe(true);
+    expect(clicksUntil({ ...base, accents: false }, 2).every((c) => c.kind === "beat")).toBe(true);
   });
 
   it("splits beats into subdivisions", () => {

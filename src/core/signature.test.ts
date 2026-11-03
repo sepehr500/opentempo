@@ -55,14 +55,15 @@ describe("time signature quick picks", () => {
 });
 
 describe("accent off", () => {
-  it("makes every beat the same, keeps splits, and old presets keep their accent", async () => {
+  it("makes every click the same, splits included, and old presets keep their accents", async () => {
     const { clicksUntil } = await import("./timeline");
     const { DEFAULT_PREFS, toSettings } = await import("../state");
     const kinds = (accent: boolean, split: 1 | 2) =>
       clicksUntil(toSettings({ ...DEFAULT_PREFS, accent, subdivision: split, bpm: 60 }, 1), 4 - 1e-6).map((c) => c.kind[0]).join("");
     expect(kinds(true, 1)).toBe("abbb");
     expect(kinds(false, 1)).toBe("bbbb");
-    expect(kinds(false, 2)).toBe("bsbsbsbs");
+    expect(kinds(true, 2)).toBe("asbsbsbs");
+    expect(kinds(false, 2)).toBe("bbbbbbbb");
     const p = hydrate({ presets: [{ id: "a", name: "x", bpm: 90, beatsPerBar: 4, subdivision: 1, voice: "wood" }, { id: "b", name: "y", bpm: 90, beatsPerBar: 5, subdivision: 1, accent: false, voice: "wood" }] } as never);
     expect(p.presets.map((x) => x.accent)).toEqual([true, false]);
     expect(hydrate(undefined).accent).toBe(true);

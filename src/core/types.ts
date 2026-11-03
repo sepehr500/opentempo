@@ -18,7 +18,8 @@ export type Settings = {
   readonly bpm: number;
   readonly beatsPerBar: number;
   readonly subdivision: Subdivision;
-  readonly accentFirst: boolean;
+  /** Off: every click sounds the same. On: the one is strongest, splits are softest. */
+  readonly accents: boolean;
   readonly countInBars: number; // 0 = off
   readonly random: RandomTempo | null;
   readonly gap: Gap | null;

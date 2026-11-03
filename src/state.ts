@@ -10,7 +10,7 @@ export type Prefs = {
   bpm: number;
   beatsPerBar: number;
   subdivision: Subdivision;
-  /** Beat 1 sounds stronger (and buzzes/flashes). Off: every beat the same, for irregular meter. */
+  /** Accents: the one strongest (and it buzzes/flashes), splits softest. Off: every click the same, for irregular meter. */
   accent: boolean;
   level: number; // 0..100
   voice: VoiceId;
@@ -89,7 +89,7 @@ export const toSettings = (p: Prefs, seed: number): Settings => ({
   bpm: p.bpm,
   beatsPerBar: p.beatsPerBar,
   subdivision: p.subdivision,
-  accentFirst: p.accent,
+  accents: p.accent,
   countInBars: p.countIn.on ? p.countIn.bars : 0,
   random: p.random.on ? { min: p.random.min, max: p.random.max, everyBars: p.random.everyBars } : null,
   gap: p.gap.on ? { play: p.gap.play, mute: p.gap.mute } : null,
@@ -103,7 +103,7 @@ export const CHECK_SETTINGS: Settings = {
   bpm: CHECK_BPM,
   beatsPerBar: 4,
   subdivision: 1,
-  accentFirst: true,
+  accents: true,
   countInBars: 0,
   random: null,
   gap: null,
