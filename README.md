@@ -18,6 +18,7 @@ A pocket metronome for the browser. Installable, works offline, no accounts.
 - **timer**: practice countdown that stops (or buzzes) at the end
 - **count-in**: one or two bars before the click starts
 - Eight synthesised sounds, each drawn as a live dot-matrix waveform
+- Desktop: shown as a unit on the page; Space plays/stops, ↑/↓ nudge the tempo (Shift: 10), T taps; knobs take drags, the scroll wheel and arrow keys
 - Presets: saved snapshots of tempo, beats, split and sound
 - Feel: buzz on the one, flash on the beat, keep the screen awake, headphone (Bluetooth) delay
   compensation

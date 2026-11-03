@@ -59,3 +59,18 @@ export const towardMore = (dx: number, dy: number): number => dx - dy;
 /** Detent marks for knobs with few positions (one per value); null draws the fine ring. */
 export const MAX_DETENTS = 24;
 export const detents = (steps: number): number | null => (steps + 1 <= MAX_DETENTS ? steps + 1 : null);
+
+// ── scroll wheel / trackpad ──────────────────────────────────────────────────────────────────
+// A mouse wheel notch is ~100px of delta; a trackpad sends many small deltas. Accumulate, and
+// step at most once per event, so a notch is one step and a trackpad flick can't whip the knob.
+
+export const WHEEL_PX = 50;
+
+/** Delta toward "more" in px: scrolling up or right. Line/page modes are scaled to pixels. */
+export const wheelDelta = (dx: number, dy: number, mode: number): number => (dx - dy) * (mode === 1 ? 40 : mode === 2 ? 400 : 1);
+
+/** New accumulator and the step to take (-1, 0, 1). */
+export const wheelStep = (acc: number, delta: number): { acc: number; step: number } => {
+  const next = acc + delta;
+  return Math.abs(next) >= WHEEL_PX ? { acc: 0, step: Math.sign(next) } : { acc: next, step: 0 };
+};

@@ -107,12 +107,12 @@ export const Unit = () => {
             <Icon.Wave />
             <span>{p.voice}</span>
           </button>
-          <button class="key wide span-2 slate" onPointerDown={t.tap}>
+          <button class="key wide span-2 slate" onPointerDown={t.tap} title="tap tempo (T)">
             <Icon.Tap />
             <span>tap</span>
           </button>
         </div>
-        <button class={`key play-key ${t.playing() ? "slate" : "accent"}`} onClick={t.toggle} aria-pressed={t.playing()}>
+        <button class={`key play-key ${t.playing() ? "slate" : "accent"}`} onClick={t.toggle} aria-pressed={t.playing()} title="play / stop (space)">
           <Show when={t.playing()} fallback={<Icon.Play />}>
             <Icon.Stop />
           </Show>

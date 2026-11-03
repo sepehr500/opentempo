@@ -9,9 +9,12 @@ export const Sheet = (p: { open: boolean; onClose: () => void; children: JSX.Ele
   createEffect(() => {
     if (p.open && !el.open) {
       // Cover everything from the function row down, so no key tops peek above the sheet.
+      // On a desktop the app is a unit on the page, not the whole window: the sheet sits on its floor.
+      const floor = document.querySelector("main.screen")?.getBoundingClientRect().bottom ?? innerHeight;
       const row = document.querySelector(".fn-row");
-      const top = row ? row.getBoundingClientRect().top : innerHeight; // no function row: fit content
-      el.style.setProperty("--sheet-min", `${Math.max(0, innerHeight - top)}px`);
+      const top = row ? row.getBoundingClientRect().top : floor; // no function row: fit content
+      el.style.setProperty("--sheet-min", `${Math.max(0, floor - top)}px`);
+      el.style.setProperty("--sheet-floor", `${Math.max(0, innerHeight - floor)}px`);
       el.showModal();
     }
     if (!p.open && el.open) el.close();

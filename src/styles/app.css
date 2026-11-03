@@ -607,7 +607,7 @@ small {
 /* ── sheets (native dialog, no scrim) ───────── */
 .sheet {
   position: fixed;
-  inset: auto 0 0 0;
+  inset: auto 0 var(--sheet-floor, 0) 0;
   /* Not a scroll container: while the body slides in it overflows the dialog, and the browser's
      initial-focus scroll would otherwise scroll the dialog against the animation. */
   overflow: visible;
@@ -1065,4 +1065,62 @@ small {
 }
 .screen.unit > .tabs {
   margin-top: 0;
+}
+
+/* ── desktop and tablets ─────────────────────────
+   With room to spare, tempo is a unit on a desk: phone-sized, raised on the page, instead of a
+   phone layout stretched to the window. Short windows keep the edge-to-edge layout. */
+@media (min-width: 700px) and (min-height: 880px) {
+  html,
+  body {
+    background: var(--color-seam);
+  }
+  /* padding, not margin: a child's top margin would collapse through and make the page scroll */
+  #root {
+    height: 100%;
+    padding-top: max(32px, calc((100dvh - 900px) / 2));
+  }
+  .screen,
+  .screen.unit {
+    height: min(calc(100dvh - 64px), 900px);
+    min-height: 0;
+    margin: 0 auto;
+    padding-bottom: 14px;
+    border-radius: 36px;
+    background: var(--color-chassis);
+    box-shadow: 0 3px 0 var(--color-seam-strong);
+    overflow-y: auto; /* a long presets list scrolls inside the unit */
+  }
+  .sheet-body {
+    border-radius: 20px 20px 36px 36px;
+    padding-bottom: 22px;
+  }
+}
+
+/* a mouse or trackpad: keys answer the pointer, knobs look grabbable */
+@media (hover: hover) and (pointer: fine) {
+  .key,
+  .tab,
+  .share-btn,
+  .install-btn,
+  .display-meter {
+    cursor: pointer;
+  }
+  .key:not(:disabled):hover,
+  .tab:not(.active):not(:disabled):hover,
+  .install-btn:hover {
+    filter: brightness(0.96);
+  }
+  .share-btn:hover {
+    background: var(--color-key-down);
+  }
+  .display-meter:hover {
+    background: var(--color-slate);
+  }
+  .knob-cap {
+    cursor: grab;
+  }
+  .knob-cap:active {
+    cursor: grabbing;
+  }
 }

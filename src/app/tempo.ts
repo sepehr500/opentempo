@@ -198,10 +198,21 @@ export const createTempo = () => {
   const deletePreset = (id: string) => setPrefs("presets", (l) => removePreset(l, id));
 
   // Space bar plays/stops (keyboards, Bluetooth pedals that send space).
+  // Keyboard (desktop, and Bluetooth page-turner pedals, which send arrows): Space plays/stops,
+  // up/down nudge the tempo (Shift: by 10), T taps. A focused knob or text field keeps its keys.
   const onKey = (e: KeyboardEvent) => {
-    if (e.code !== "Space" || e.target instanceof HTMLInputElement || sheet()) return;
-    e.preventDefault();
-    toggle();
+    const el = e.target instanceof Element ? e.target : null;
+    if (sheet() || e.metaKey || e.ctrlKey || e.altKey || el?.closest("input, textarea, [role=slider]")) return;
+    const key = e.key === " " || e.code === "Space" ? "space" : e.key.toLowerCase();
+    if (key === "space") {
+      e.preventDefault();
+      if (!e.repeat) toggle();
+    } else if (key === "arrowup" || key === "arrowdown") {
+      e.preventDefault();
+      setBpm(prefs.bpm + (key === "arrowup" ? 1 : -1) * (e.shiftKey ? 10 : 1));
+    } else if (key === "t" && !e.repeat) {
+      tap();
+    }
   };
   window.addEventListener("keydown", onKey);
   onCleanup(() => window.removeEventListener("keydown", onKey));

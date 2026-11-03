@@ -71,3 +71,17 @@ describe("knob feel", () => {
     expect(detents(280)).toBe(null);
   });
 });
+
+describe("scroll wheel", () => {
+  it("a notch is one step; a trackpad needs a deliberate scroll per step", async () => {
+    const { wheelDelta, wheelStep } = await import("./knobDrag");
+    expect(wheelStep(0, wheelDelta(0, -100, 0))).toEqual({ acc: 0, step: 1 }); // notch up
+    expect(wheelStep(0, wheelDelta(0, 120, 0))).toEqual({ acc: 0, step: -1 }); // Windows notch down
+    expect(wheelStep(0, wheelDelta(0, -3, 1)).step).toBe(1); // line mode
+    // trackpad: 40 small deltas of -4px = 160px -> 3 steps, not 40
+    let acc = 0, steps = 0;
+    for (let i = 0; i < 40; i++) { const r = wheelStep(acc, wheelDelta(0, -4, 0)); acc = r.acc; steps += r.step; }
+    expect(steps).toBe(3);
+    expect(wheelDelta(10, 0, 0)).toBe(10); // right means more
+  });
+});

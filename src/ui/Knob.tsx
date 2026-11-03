@@ -1,7 +1,7 @@
 import { For, Show, type JSX } from "solid-js";
 import { buzz } from "../platform/device";
 import { detentDue } from "../state";
-import { detents, gainFor, pxPerStep, releaseValue, smoothSpeed, stepTo, towardMore, type Sample } from "./knobDrag";
+import { detents, gainFor, pxPerStep, releaseValue, smoothSpeed, stepTo, towardMore, wheelDelta, wheelStep, type Sample } from "./knobDrag";
 
 export type KnobProps = {
   label: string;
@@ -33,6 +33,7 @@ export const Knob = (props: KnobProps) => {
   let acc = 0; // unrounded value, so slow moves add up instead of rounding away
   let samples: Sample[] = [];
   let lastDetent = 0;
+  let wheel = 0;
 
   const steps = () => Math.round((props.max - props.min) / step());
   const px = () => props.sensitivity ?? pxPerStep(steps());
@@ -106,8 +107,11 @@ export const Knob = (props: KnobProps) => {
         onKeyDown={key}
         onWheel={(e) => {
           e.preventDefault();
-          set(props.value - Math.sign(e.deltaY) * step());
+          const r = wheelStep(wheel, wheelDelta(e.deltaX, e.deltaY, e.deltaMode));
+          wheel = r.acc;
+          if (r.step) set(props.value + r.step * step());
         }}
+        title={`${props.label}: drag, scroll or arrow keys`}
       >
         <svg width="68" height="68" viewBox="0 0 68 68" aria-hidden="true">
           <Show
