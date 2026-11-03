@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { shouldReload } from "./update";
+import { headerSlot } from "./header";
 
-describe("updates", () => {
-  it("reload once a new build has taken over, when stopped", () => {
-    expect(shouldReload({ hadController: true, updated: true, playing: false })).toBe(true);
-  });
-  it("never mid-play, never on a first install, never without an update", () => {
-    expect(shouldReload({ hadController: true, updated: true, playing: true })).toBe(false);
-    expect(shouldReload({ hadController: false, updated: true, playing: false })).toBe(false);
-    expect(shouldReload({ hadController: true, updated: false, playing: false })).toBe(false);
+describe("header slot", () => {
+  it("an update wins, then install, then share", () => {
+    expect(headerSlot({ update: true, canInstall: true, installed: false })).toBe("update");
+    expect(headerSlot({ update: true, canInstall: false, installed: true })).toBe("update");
+    expect(headerSlot({ update: false, canInstall: true, installed: false })).toBe("install");
+    expect(headerSlot({ update: false, canInstall: false, installed: true })).toBe("share");
+    expect(headerSlot({ update: false, canInstall: false, installed: false })).toBe(null);
   });
 });

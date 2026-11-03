@@ -7,7 +7,8 @@ export default defineConfig({
   plugins: [
     solid(),
     VitePWA({
-      registerType: "autoUpdate",
+      // A new build waits until the user taps "update" (src/platform/update.ts).
+      registerType: "prompt",
       includeAssets: ["icon.svg", "apple-touch-icon.png"],
       includeManifestIcons: false, // the globs below decide what is cached offline
       manifest: {

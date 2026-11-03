@@ -6,6 +6,8 @@ import { Unit } from "./screens/Unit";
 import { Voice } from "./screens/Voice";
 import { canInstall, install, isInstalled } from "./platform/install";
 import { shareApp, shareData, shareToast } from "./platform/share";
+import { headerSlot } from "./platform/header";
+import { applyUpdate, updateReady } from "./platform/update";
 import * as Icon from "./ui/icons";
 import { Wordmark } from "./ui/Wordmark";
 
@@ -27,18 +29,35 @@ const ShareKey = () => {
 
 const Shell = () => {
   const t = useTempo();
+  const slot = () => headerSlot({ update: updateReady(), canInstall: canInstall(), installed: isInstalled() });
   return (
     <main class={`screen ${t.tab()}`}>
       <header class="top">
         <h1 class="brand">
           <Wordmark />
         </h1>
-        {/* before installing: install; once installed: share the app */}
-        <Show when={canInstall()} fallback={<Show when={isInstalled()}><ShareKey /></Show>}>
-          <button class="install-btn" onClick={() => void install()}>
-            install
-          </button>
-        </Show>
+        {/* one slot: update when a new version is ready, else install, else (installed) share */}
+        <Switch>
+          <Match when={slot() === "update"}>
+            <button
+              class="install-btn"
+              onClick={() => {
+                if (t.playing()) t.toggle(); // the reload would cut the click off mid-bar anyway
+                void applyUpdate();
+              }}
+            >
+              update
+            </button>
+          </Match>
+          <Match when={slot() === "install"}>
+            <button class="install-btn" onClick={() => void install()}>
+              install
+            </button>
+          </Match>
+          <Match when={slot() === "share"}>
+            <ShareKey />
+          </Match>
+        </Switch>
       </header>
 
       <Switch>

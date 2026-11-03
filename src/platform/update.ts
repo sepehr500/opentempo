@@ -1,26 +1,25 @@
-// Updates take effect on the next open, not the one after. The offline cache answers first, so an
-// open right after a deploy runs the old build while the new service worker installs. So: check
-// for a new build whenever the app is opened or comes back to the front, and once the new worker
-// takes over, reload - but never while the click is playing (that waits for stop).
+// "update" in the header: a new build downloads in the background and waits; it takes over when
+// the user taps update (or the next time the app is fully closed and opened). Nothing reloads by
+// itself. A check runs on open and whenever the app comes back to the front.
+import { createSignal } from "solid-js";
+import { registerSW } from "virtual:pwa-register";
 
-/** Pure: reload for an update only if a worker already ran this page (not on a first install), and not mid-play. */
-export const shouldReload = (s: { hadController: boolean; updated: boolean; playing: boolean }): boolean =>
-  s.hadController && s.updated && !s.playing;
+const [ready, setReady] = createSignal(false);
+let apply: ((reload?: boolean) => Promise<void>) | null = null;
 
-type Hooks = { playing: () => boolean; onReadyWhileStopped: (reload: () => void) => void };
-
-export const watchForUpdates = (h: Hooks) => {
-  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
-  const sw = navigator.serviceWorker;
-  const hadController = !!sw.controller;
-  let updated = false;
-  const reload = () => location.reload();
-  const tryReload = () => shouldReload({ hadController, updated, playing: h.playing() }) && reload();
-  sw.addEventListener("controllerchange", () => {
-    updated = true;
-    if (!tryReload()) h.onReadyWhileStopped(() => tryReload());
+if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+  apply = registerSW({
+    onNeedRefresh: () => setReady(true),
+    onRegisteredSW: (_url, r) => {
+      if (!r) return;
+      const check = () => void r.update().catch(() => {});
+      document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && check());
+    },
   });
-  const check = () => sw.getRegistration().then((r) => r?.update()).catch(() => {});
-  document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && check());
-  check();
-};
+}
+
+/** A new version is downloaded and waiting. */
+export const updateReady = ready;
+
+/** Switch to the new version: the waiting worker takes over and the page reloads. */
+export const applyUpdate = () => apply?.(true);
