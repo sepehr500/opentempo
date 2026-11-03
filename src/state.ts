@@ -10,6 +10,8 @@ export type Prefs = {
   bpm: number;
   beatsPerBar: number;
   subdivision: Subdivision;
+  /** Beat 1 sounds stronger (and buzzes/flashes). Off: every beat the same, for irregular meter. */
+  accent: boolean;
   level: number; // 0..100
   voice: VoiceId;
   random: { on: boolean; min: number; max: number; everyBars: number };
@@ -48,6 +50,7 @@ export const DEFAULT_PREFS: Prefs = {
   bpm: 120,
   beatsPerBar: 4,
   subdivision: 1,
+  accent: true,
   level: 80,
   voice: "wood",
   random: { on: false, min: 90, max: 140, everyBars: 4 },
@@ -78,7 +81,7 @@ export const hydrate = (raw: Partial<Prefs> | undefined): Prefs => {
   countIn: { ...DEFAULT_PREFS.countIn, ...stored?.countIn },
   feel: { ...DEFAULT_PREFS.feel, ...stored?.feel },
   latencyMs: clampLatency(stored?.latencyMs ?? DEFAULT_PREFS.latencyMs),
-  presets: Array.isArray(stored?.presets) ? stored.presets.map(fromLegacy) : [],
+  presets: Array.isArray(stored?.presets) ? stored.presets.map((x) => ({ ...fromLegacy(x), accent: typeof x.accent === "boolean" ? x.accent : true })) : [],
   };
 };
 
@@ -86,7 +89,7 @@ export const toSettings = (p: Prefs, seed: number): Settings => ({
   bpm: p.bpm,
   beatsPerBar: p.beatsPerBar,
   subdivision: p.subdivision,
-  accentFirst: true,
+  accentFirst: p.accent,
   countInBars: p.countIn.on ? p.countIn.bars : 0,
   random: p.random.on ? { min: p.random.min, max: p.random.max, everyBars: p.random.everyBars } : null,
   gap: p.gap.on ? { play: p.gap.play, mute: p.gap.mute } : null,

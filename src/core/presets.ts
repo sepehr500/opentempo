@@ -5,6 +5,7 @@ export type PresetValues = {
   readonly bpm: number;
   readonly beatsPerBar: number;
   readonly subdivision: Subdivision;
+  readonly accent: boolean;
   readonly voice: string;
 };
 
@@ -19,6 +20,7 @@ export const valuesOf = (p: PresetValues): PresetValues => ({
   bpm: p.bpm,
   beatsPerBar: p.beatsPerBar,
   subdivision: p.subdivision,
+  accent: p.accent,
   voice: p.voice,
 });
 
@@ -27,6 +29,7 @@ export const matches = (preset: PresetValues, current: PresetValues): boolean =>
   preset.bpm === current.bpm &&
   preset.beatsPerBar === current.beatsPerBar &&
   preset.subdivision === current.subdivision &&
+  preset.accent === current.accent &&
   preset.voice === current.voice;
 
 /** Next free default name: "120 bpm", then "120 bpm 2", … */

@@ -5,7 +5,7 @@ import { meta } from "./Presets";
 import { LatencySheet } from "./Latency";
 import { capabilities } from "../platform/capabilities";
 import { formatClock } from "../state";
-import { Choice, RangeRuler, Sheet, SheetHeader, Stepper } from "../ui/controls";
+import { Choice, RangeRuler, Sheet, SheetHeader, Stepper, Toggle } from "../ui/controls";
 import { SIGNATURES, applySignature, countWords, signatureOf } from "../core/signature";
 import * as Icon from "../ui/icons";
 
@@ -150,8 +150,12 @@ const MeterSheet = () => {
           );
         }}
       />
+      <div class="row">
+        <span>accent the one</span>
+        <Toggle label="accent the one" on={p.accent} onChange={(v) => t.setPrefs("accent", v)} />
+      </div>
       <div class="count-words" aria-label={`count: ${words().join(" ")}`}>
-        <For each={words()}>{(w, i) => <span classList={{ "count-beat": /\d/.test(w), on: i() === lit() }}>{w}</span>}</For>
+        <For each={words()}>{(w, i) => <span classList={{ "count-beat": /\d/.test(w), one: i() === 0 && p.accent, on: i() === lit() }}>{w}</span>}</For>
       </div>
     </>
   );

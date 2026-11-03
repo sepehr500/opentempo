@@ -459,8 +459,8 @@ small {
 
 /* ── time signature sheet ────── */
 .meter-choice .choice-key {
-  height: 84px;
-  padding: 10px;
+  height: 62px;
+  padding: 8px 10px;
   align-items: stretch;
 }
 .meter-tile {
@@ -468,7 +468,7 @@ small {
   flex-direction: column;
   justify-content: space-between;
   width: 100%;
-  gap: 6px;
+  gap: 4px;
 }
 .meter-id {
   font: 700 20px/1 var(--font-ui);
@@ -502,7 +502,7 @@ small {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 10px;
-  padding: 14px 16px;
+  padding: 10px 16px;
   border-radius: var(--radius-panel);
   background: var(--color-display);
   color: var(--color-display-muted);
@@ -511,6 +511,11 @@ small {
 .count-words .count-beat {
   color: var(--color-display-text);
   font-weight: 700;
+}
+/* the accented one is underlined; with accents off, every beat looks the same */
+.count-words .one {
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 .count-words .on {
   color: var(--color-dot-on);

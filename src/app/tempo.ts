@@ -62,7 +62,8 @@ export const createTempo = () => {
     onClick: (c) => {
       setNow(c);
       if (measuring) return;
-      const downbeat = c.beat === 0 && c.sub === 0 && !c.muted;
+      // the one, when accented: with accents off nothing marks the bar
+      const downbeat = c.kind === "accent" && !c.muted;
       if (downbeat && feel().buzz) buzz(c.countIn ? 10 : 20);
       if (downbeat && feel().flash) {
         setFlash(true);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { addPreset, defaultName, matches, removePreset, updatePreset, type Preset } from "./presets";
 
-const v = { bpm: 120, beatsPerBar: 4, subdivision: 1 as const, voice: "wood" };
+const v = { bpm: 120, beatsPerBar: 4, subdivision: 1 as const, accent: true, voice: "wood" };
 
 describe("presets", () => {
   it("adds with a default name from the tempo, avoiding duplicates", () => {
@@ -13,7 +13,7 @@ describe("presets", () => {
 
   it("keeps only the preset values", () => {
     const [p] = addPreset([], { ...v, extra: 1 } as never);
-    expect(Object.keys(p).sort()).toEqual(["beatsPerBar", "bpm", "id", "name", "subdivision", "voice"]);
+    expect(Object.keys(p).sort()).toEqual(["accent", "beatsPerBar", "bpm", "id", "name", "subdivision", "voice"]);
   });
 
   it("updates and removes by id without touching others", () => {
@@ -32,5 +32,9 @@ describe("presets", () => {
 
   it("numbers past existing duplicates", () => {
     expect(defaultName([{ name: "120 bpm" }, { name: "120 bpm 2" }] as Preset[], 120)).toBe("120 bpm 3");
+  });
+
+  it("tells presets apart by accent", () => {
+    expect(matches(v, { ...v, accent: false })).toBe(false);
   });
 });
