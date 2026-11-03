@@ -1,7 +1,7 @@
-import type { JSX } from "solid-js";
+import { For, Show, type JSX } from "solid-js";
 import { buzz } from "../platform/device";
 import { detentDue } from "../state";
-import { gainFor, releaseValue, smoothSpeed, type Sample } from "./knobDrag";
+import { detents, gainFor, pxPerStep, releaseValue, smoothSpeed, stepTo, towardMore, type Sample } from "./knobDrag";
 
 export type KnobProps = {
   label: string;
@@ -9,7 +9,7 @@ export type KnobProps = {
   min: number;
   max: number;
   step?: number;
-  /** Pixels of vertical drag per step. */
+  /** Pixels of drag per step; by default set from how many steps the knob has (knobDrag.pxPerStep). */
   sensitivity?: number;
   /** Slow drags move less per pixel, fast ones more (for wide ranges like tempo). */
   accelerate?: boolean;
@@ -26,12 +26,16 @@ export const angleOf = (v: number, min: number, max: number) =>
 
 export const Knob = (props: KnobProps) => {
   const step = () => props.step ?? 1;
+  let lastX = 0;
   let lastY = 0;
   let lastT = 0;
   let speed = 0;
   let acc = 0; // unrounded value, so slow moves add up instead of rounding away
   let samples: Sample[] = [];
   let lastDetent = 0;
+
+  const steps = () => Math.round((props.max - props.min) / step());
+  const px = () => props.sensitivity ?? pxPerStep(steps());
 
   const set = (v: number) => {
     const next = Math.min(props.max, Math.max(props.min, Math.round(v / step()) * step()));
@@ -47,6 +51,7 @@ export const Knob = (props: KnobProps) => {
 
   const down = (e: PointerEvent) => {
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    lastX = e.clientX;
     lastY = e.clientY;
     lastT = e.timeStamp;
     speed = 0;
@@ -55,13 +60,15 @@ export const Knob = (props: KnobProps) => {
   };
   const move = (e: PointerEvent) => {
     if (!(e.currentTarget as Element).hasPointerCapture(e.pointerId)) return;
-    const dy = lastY - e.clientY;
-    speed = smoothSpeed(speed, dy, e.timeStamp - lastT);
+    const d = towardMore(e.clientX - lastX, e.clientY - lastY); // up or right: more
+    speed = smoothSpeed(speed, d, e.timeStamp - lastT);
     const gain = props.accelerate ? gainFor(speed) : 1;
-    acc = Math.min(props.max, Math.max(props.min, acc + (dy / (props.sensitivity ?? 6)) * step() * gain));
+    acc = Math.min(props.max, Math.max(props.min, acc + (d / px()) * step() * gain));
+    lastX = e.clientX;
     lastY = e.clientY;
     lastT = e.timeStamp;
-    set(acc);
+    // in steps: a dead zone past each halfway point, so resting on an edge doesn't flicker
+    set(stepTo(acc / step(), props.value / step()) * step());
     samples.push({ t: e.timeStamp, y: e.clientY, v: props.value });
     if (samples.length > 32) samples.shift();
   };
@@ -103,7 +110,17 @@ export const Knob = (props: KnobProps) => {
         }}
       >
         <svg width="68" height="68" viewBox="0 0 68 68" aria-hidden="true">
-          <circle cx="34" cy="34" r="32" fill="none" stroke="var(--color-tick)" stroke-width="1.6" stroke-dasharray="1.5 5.2" />
+          <Show
+            when={detents(steps())}
+            fallback={<circle cx="34" cy="34" r="32" fill="none" stroke="var(--color-tick)" stroke-width="1.6" stroke-dasharray="1.5 5.2" />}
+          >
+            {(n) => (
+              // one mark per value, along the sweep: the indicator lands on a mark like a detent
+              <For each={Array.from({ length: n() }, (_, i) => i)}>
+                {(i) => <circle cx="34" cy="2.5" r="1.5" fill="var(--color-tick)" transform={`rotate(${(i / (n() - 1 || 1)) * SWEEP - SWEEP / 2} 34 34)`} />}
+              </For>
+            )}
+          </Show>
           <circle cx="34" cy="35.5" r="25" fill={`var(--color-${props.color}-rim)`} />
           <circle cx="34" cy="34" r="25" fill={`var(--color-${props.color})`} />
           <circle cx="34" cy="17.5" r="3.5" fill={ink} transform={`rotate(${angle()} 34 34)`} />

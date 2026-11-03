@@ -30,3 +30,32 @@ export const releaseValue = (samples: readonly Sample[], upT: number, upY: numbe
   const before = [...samples].reverse().find((s) => s.t <= upT - RELEASE_MS) ?? samples[0];
   return Math.abs(upY - before.y) <= RELEASE_PX ? before.v : null;
 };
+
+// ── feel: every knob covers its range in about the same thumb travel ───────────────────────────
+
+/** Thumb travel (px) for a knob's whole range. */
+export const TRAVEL_PX = 220;
+/** Bounds per step: few-position knobs don't feel sluggish, many-position ones don't get twitchy. */
+export const MAX_STEP_PX = 40;
+export const MIN_STEP_PX = 3;
+
+/** Pixels of drag per step, from how many steps the knob has. */
+export const pxPerStep = (steps: number): number => Math.min(MAX_STEP_PX, Math.max(MIN_STEP_PX, TRAVEL_PX / Math.max(1, steps)));
+
+/** A step only happens once the drag is clearly past the halfway point: no flicker on an edge. */
+export const HYSTERESIS = 0.25;
+
+/**
+ * The value for an unrounded drag position `acc` (in steps), given the value shown now.
+ * Moves only when acc is more than half a step plus the dead zone away, then lands on the
+ * nearest whole step.
+ */
+export const stepTo = (acc: number, value: number): number =>
+  Math.abs(acc - value) > 0.5 + HYSTERESIS ? Math.round(acc) : value;
+
+/** Drag in px toward "more": up or right. */
+export const towardMore = (dx: number, dy: number): number => dx - dy;
+
+/** Detent marks for knobs with few positions (one per value); null draws the fine ring. */
+export const MAX_DETENTS = 24;
+export const detents = (steps: number): number | null => (steps + 1 <= MAX_DETENTS ? steps + 1 : null);

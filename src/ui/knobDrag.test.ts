@@ -41,3 +41,33 @@ describe("release", () => {
     expect(releaseValue([], 60, 0)).toBe(null);
   });
 });
+
+describe("knob feel", () => {
+  it("covers each range in about the same travel, within bounds", async () => {
+    const { pxPerStep } = await import("./knobDrag");
+    expect(pxPerStep(11)).toBe(20); // beats 1-12
+    expect(pxPerStep(3)).toBe(40); // split 1-4: capped
+    expect(pxPerStep(20)).toBe(11); // level 0-100 by 5
+    expect(pxPerStep(280)).toBe(3); // tempo: floor
+  });
+
+  it("does not flicker on an edge", async () => {
+    const { stepTo } = await import("./knobDrag");
+    expect(stepTo(4.55, 4)).toBe(4); // just past halfway: still 4
+    expect(stepTo(4.8, 4)).toBe(5);
+    expect(stepTo(4.45, 5)).toBe(5); // wobbling back across the edge: stays 5
+    expect(stepTo(4.2, 5)).toBe(4);
+    expect(stepTo(6.9, 4)).toBe(7); // a big move lands on the nearest step
+  });
+
+  it("up or right means more, and few-position knobs get one detent per value", async () => {
+    const { towardMore, detents } = await import("./knobDrag");
+    expect(towardMore(0, -10)).toBe(10);
+    expect(towardMore(10, 0)).toBe(10);
+    expect(towardMore(-4, 4)).toBe(-8);
+    expect(detents(3)).toBe(4);
+    expect(detents(11)).toBe(12);
+    expect(detents(20)).toBe(21);
+    expect(detents(280)).toBe(null);
+  });
+});
